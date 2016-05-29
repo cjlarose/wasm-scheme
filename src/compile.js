@@ -54,6 +54,7 @@ const DECIMAL_LITERAL = /^\d+$/;
 const HEX_LITERAL = /^0x[\da-fA-F]+$/;
 const TRUE = /^true$/;
 const FALSE = /^false$/;
+const HEX_CHARACTER_LITERAL = /^'\\x[\da-fA-F]{2}'$/;
 
 export default function compile(source) {
   let code;
@@ -68,6 +69,9 @@ export default function compile(source) {
     code = codeSection(functionBody([], returnNode(1, i32Const(1))));
   } else if (FALSE.test(source)) {
     code = codeSection(functionBody([], returnNode(1, i32Const(0))));
+  } else if (HEX_CHARACTER_LITERAL.test(source)) {
+    const retValue = parseInt(source.substr(3, 2), 16);
+    code = codeSection(functionBody([], returnNode(1, i32Const(retValue))));
   } else {
     throw new Error('Unable to parse source');
   }

@@ -3,11 +3,11 @@ import compile from './compile';
 function compileAndExecute(source) {
   const view = compile(source);
   const wasmModule = Wasm.instantiateModule(view, {});
-
-  console.log(wasmModule.exports.entry());
+  return wasmModule.exports.entry();
 }
 
-compileAndExecute('238');
-compileAndExecute('0x2f42');
-compileAndExecute('true');
-compileAndExecute('false');
+console.log(compileAndExecute('238'));
+console.log(compileAndExecute('0x2f42'));
+console.log(compileAndExecute('true'));
+console.log(compileAndExecute('false'));
+console.log(String.fromCharCode(compileAndExecute("'\\x7E'")));
