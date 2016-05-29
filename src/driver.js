@@ -9,3 +9,5 @@ function compileAndExecute(source) {
 
 compileAndExecute('238');
 compileAndExecute('0x2f42');
+compileAndExecute('true');
+compileAndExecute('false');
