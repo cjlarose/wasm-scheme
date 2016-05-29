@@ -4,4 +4,4 @@ import compile from './compile';
 const view = compile();
 const wasmModule = Wasm.instantiateModule(view, {});
 
-console.log(wasmModule);
+console.log(wasmModule.exports.entry());
