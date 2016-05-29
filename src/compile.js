@@ -1,4 +1,59 @@
+import { encodeInt32, encodeUInt32 } from 'leb';
+
+const utf8Encoder = new TextEncoder('utf-8');
+
+/*
+ * http://www.2ality.com/2015/10/concatenating-typed-arrays.html
+ */
+function concatenate(ResultConstructor, ...arrays) {
+  let totalLength = 0;
+  for (const arr of arrays) {
+    totalLength += arr.length;
+  }
+  const result = new ResultConstructor(totalLength);
+  let offset = 0;
+  for (const arr of arrays) {
+    result.set(arr, offset);
+    offset += arr.length;
+  }
+  return result;
+}
+
+function section(title, payload) {
+  const titleBytes = utf8Encoder.encode(title);
+  return new Uint8Array([...encodeUInt32(titleBytes.length),
+                         ...titleBytes,
+                         ...encodeUInt32(payload.length),
+                         ...payload]);
+}
+
+function codeSection(...functionBodies) {
+  return section('code', [...encodeUInt32(functionBodies.length),
+                          ...concatenate(Uint8Array, ...functionBodies)]);
+}
+
+function functionBody(localEntries, bodyAst) {
+  const localCount = encodeUInt32(localEntries.length);
+  const locals = concatenate(Uint8Array, ...localEntries);
+  const functionLength = localCount.length + locals.length + bodyAst.length;
+  return new Uint8Array([...encodeUInt32(functionLength),
+                         ...localCount,
+                         ...locals,
+                         ...bodyAst]);
+}
+
+function returnNode(numVals, valAst) {
+  return new Uint8Array([...valAst, 0x09, ...encodeUInt32(numVals)]);
+}
+
+function i32Const(num) {
+  return new Uint8Array([0x10, ...encodeInt32(num)]);
+}
+
 export default function compile(source) {
+  const retValue = parseInt(source, 10);
+  const code = codeSection(functionBody([], returnNode(1, i32Const(retValue))));
+
   return new Uint8Array([
     /* Magic number, version (11) */
     0x00, 0x61, 0x73, 0x6d, 0x0b, 0x00, 0x00, 0x00,
@@ -29,14 +84,7 @@ export default function compile(source) {
     /* count (1), export entry: index 0, function string length (5), "entry" */
     0x01, 0x00, 0x05, 0x65, 0x6e, 0x74, 0x72, 0x79,
 
-    /* section title length (4), section title "code" */
-    0x04, 0x63, 0x6f, 0x64, 0x65,
-    /* payload length (11) */
-    0x8b, 0x80, 0x80, 0x80, 0x00,
-    /* count (1), function body length (5) */
-    0x01, 0x85, 0x80, 0x80, 0x80,
-    /* local count (0), i32.const 42, return (1 argument) */
-    0x00, 0x00, 0x10, 0x2a, 0x09, 0x01,
+    ...code,
 
     /* section title length (4), section title "name" */
     0x04, 0x6e, 0x61, 0x6d, 0x65,
