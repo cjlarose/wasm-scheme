@@ -50,9 +50,17 @@ function i32Const(num) {
   return new Uint8Array([0x10, ...encodeInt32(num)]);
 }
 
+const DECIMAL_LITERAL = /^\d+$/;
+
 export default function compile(source) {
-  const retValue = parseInt(source, 10);
-  const code = codeSection(functionBody([], returnNode(1, i32Const(retValue))));
+  let code;
+
+  if (DECIMAL_LITERAL.test(source)) {
+    const retValue = parseInt(source, 10);
+    code = codeSection(functionBody([], returnNode(1, i32Const(retValue))));
+  } else {
+    throw new Error('Unable to parse source');
+  }
 
   return new Uint8Array([
     /* Magic number, version (11) */
