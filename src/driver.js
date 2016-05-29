@@ -1,6 +1,11 @@
 import compile from './compile';
 
-const view = compile("238");
-const wasmModule = Wasm.instantiateModule(view, {});
+function compileAndExecute(source) {
+  const view = compile(source);
+  const wasmModule = Wasm.instantiateModule(view, {});
 
-console.log(wasmModule.exports.entry());
+  console.log(wasmModule.exports.entry());
+}
+
+compileAndExecute('238');
+compileAndExecute('0x2f42');

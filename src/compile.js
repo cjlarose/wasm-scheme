@@ -51,12 +51,16 @@ function i32Const(num) {
 }
 
 const DECIMAL_LITERAL = /^\d+$/;
+const HEX_LITERAL = /^0x[\da-fA-F]+$/;
 
 export default function compile(source) {
   let code;
 
   if (DECIMAL_LITERAL.test(source)) {
     const retValue = parseInt(source, 10);
+    code = codeSection(functionBody([], returnNode(1, i32Const(retValue))));
+  } else if (HEX_LITERAL.test(source)) {
+    const retValue = parseInt(source, 16);
     code = codeSection(functionBody([], returnNode(1, i32Const(retValue))));
   } else {
     throw new Error('Unable to parse source');
