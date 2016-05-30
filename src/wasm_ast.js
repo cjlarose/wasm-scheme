@@ -49,3 +49,7 @@ export function returnNode(numVals, valAst) {
 export function i32Const(num) {
   return new Uint8Array([0x10, ...encodeInt32(num)]);
 }
+
+export function i32Sub(lhs, rhs) {
+  return new Uint8Array([...lhs, ...rhs, 0x41]);
+}

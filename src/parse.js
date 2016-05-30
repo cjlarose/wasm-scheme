@@ -102,7 +102,7 @@ export function tokenize(program) {
   return tokens;
 }
 
-function parse(tokens, start) {
+function parseWithOffset(tokens, start) {
   const ast = [];
   let pos = start;
   if (tokens[pos].type !== TOKEN_TYPES.OPEN_PAREN) {
@@ -115,7 +115,7 @@ function parse(tokens, start) {
     if (token.type === TOKEN_TYPES.CLOSE_PAREN) {
       return [ast, pos + 1];
     } else if (token.type === TOKEN_TYPES.OPEN_PAREN) {
-      const [newTokens, newPos] = parse(tokens, pos);
+      const [newTokens, newPos] = parseWithOffset(tokens, pos);
       ast.push(newTokens);
       pos = newPos;
     } else {
@@ -127,7 +127,7 @@ function parse(tokens, start) {
   throw new Error('Unexpected end of input');
 }
 
-export function parseProgram(tokens) {
-  const result = parse(tokens, 0);
+export function parse(tokens) {
+  const result = parseWithOffset(tokens, 0);
   return result[0];
 }

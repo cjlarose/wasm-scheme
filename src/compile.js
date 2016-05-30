@@ -1,6 +1,6 @@
-import { tokenize } from './parse';
+import { tokenize, parse } from './parse';
 import { TOKEN_TYPES } from './tokens';
-import { codeSection, functionBody, returnNode, i32Const } from './wasm_ast';
+import { codeSection, functionBody, returnNode, i32Const, i32Sub } from './wasm_ast';
 
 function isImmediateValue(tokens) {
   if (tokens.length !== 1) return false;
@@ -30,8 +30,14 @@ export default function compile(source) {
 
     code = codeSection(functionBody([], returnNode(1, i32Const(retValue))));
   } else {
-    console.log(tokens);
-    throw new Error('Not yet implemented');
+    const ast = parse(tokens);
+    const [op, immediate] = ast;
+    if (op.value === 'negate' && immediate.type === TOKEN_TYPES.INTEGER) {
+      const functionText = returnNode(1, i32Sub(i32Const(0), i32Const(immediate.value)));
+      code = codeSection(functionBody([], functionText));
+    } else {
+      throw new Error('Not yet implemented');
+    }
   }
 
   return new Uint8Array([
