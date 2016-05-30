@@ -1,22 +1,4 @@
-const TOKEN_TYPES = {
-  OPEN_PAREN: 'OPEN_PAREN',
-  CLOSE_PAREN: 'CLOSE_PAREN',
-  ID: 'ID',
-  INTEGER: 'INTEGER',
-  BOOLEAN: 'BOOLEAN',
-};
-
-const singleCharacterTokens = {
-  '(': { type: TOKEN_TYPES.OPEN_PAREN },
-  ')': { type: TOKEN_TYPES.CLOSE_PAREN },
-};
-
-const reservedWords = {
-  true: { type: TOKEN_TYPES.BOOLEAN,
-          value: true },
-  false: { type: TOKEN_TYPES.BOOLEAN,
-           value: false },
-};
+import { TOKEN_TYPES, singleCharacterTokens, reservedWords } from './tokens';
 
 function isDigit(ch) {
   return /^\d$/.test(ch);
@@ -114,8 +96,7 @@ function parse(tokens, start) {
   throw new Error('Unexpected end of input');
 }
 
-export default function parseProgram(source) {
-  const tokens = tokenize(source);
+export function parseProgram(tokens) {
   const result = parse(tokens, 0);
   return result[0];
 }
