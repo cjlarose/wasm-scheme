@@ -27,7 +27,7 @@ export function tokenize(program) {
     }
 
     // Read decimal integer literal
-    if (isDigit(ch) || ch === '-') {
+    if (isDigit(ch)) {
       const literalDigits = [ch];
       pos++;
       while (isDigit(ch = program[pos])) {

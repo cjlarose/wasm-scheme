@@ -7,7 +7,7 @@ function compileAndExecute(source) {
 }
 
 console.log(compileAndExecute('238'));
-console.log(compileAndExecute('-238'));
+//console.log(compileAndExecute('-238'));
 //console.log(compileAndExecute('0x2f42'));
 console.log(compileAndExecute('true'));
 console.log(compileAndExecute('false'));

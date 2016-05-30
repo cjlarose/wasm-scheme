@@ -9,6 +9,7 @@ export const TOKEN_TYPES = {
 export const singleCharacterTokens = {
   '(': { type: TOKEN_TYPES.OPEN_PAREN },
   ')': { type: TOKEN_TYPES.CLOSE_PAREN },
+  '-': { type: TOKEN_TYPES.MINUS },
 };
 
 export const reservedWords = {
