@@ -1,7 +1,11 @@
 import { TOKEN_TYPES, singleCharacterTokens, reservedWords } from './tokens';
 
-function isDigit(ch) {
+function isDecimalDigit(ch) {
   return /^\d$/.test(ch);
+}
+
+function isHexDigit(ch) {
+  return /^[\da-fA-F]$/.test(ch);
 }
 
 function isLetter(ch) {
@@ -13,7 +17,7 @@ function isWhitespace(ch) {
 }
 
 function isAlphanumeric(ch) {
-  return isDigit(ch) || isLetter(ch);
+  return isDecimalDigit(ch) || isLetter(ch);
 }
 
 export function tokenize(program) {
@@ -26,11 +30,38 @@ export function tokenize(program) {
       pos++;
     }
 
-    // Read decimal integer literal
-    if (isDigit(ch)) {
+    // Read hexadecimal integer literal
+    if (ch === '0') {
+      pos++;
+      if (program[pos] !== 'x') {
+        throw new Error(`Unepxected character '${program[pos]}' following '0'. ` +
+                         "Expected 'x' as part of hexadecimal literal");
+      }
+      pos++;
+
+      ch = program[pos];
+      if (!isHexDigit(ch)) {
+        throw new Error(`Unepxected character '${program[pos]}' following '0x'. ` +
+                        'Expected hexadecimal digit (0-9, a-f, A-F)');
+      }
+
       const literalDigits = [ch];
       pos++;
-      while (isDigit(ch = program[pos])) {
+      while (isHexDigit(ch = program[pos])) {
+        literalDigits.push(ch);
+        pos++;
+      }
+      const tokenVal = parseInt(literalDigits.join(''), 16);
+      tokens.push({ type: TOKEN_TYPES.INTEGER,
+                    value: tokenVal });
+      continue;
+    }
+
+    // Read decimal integer literal
+    if (isDecimalDigit(ch)) {
+      const literalDigits = [ch];
+      pos++;
+      while (isDecimalDigit(ch = program[pos])) {
         literalDigits.push(ch);
         pos++;
       }

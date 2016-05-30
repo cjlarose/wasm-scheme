@@ -7,8 +7,9 @@ function compileAndExecute(source) {
 }
 
 console.log(compileAndExecute('238'));
-//console.log(compileAndExecute('-238'));
-//console.log(compileAndExecute('0x2f42'));
+// console.log(compileAndExecute('-238'));
+console.log(compileAndExecute('0x1'));
+console.log(compileAndExecute('0x99ccff'));
 console.log(compileAndExecute('true'));
 console.log(compileAndExecute('false'));
 //console.log(String.fromCharCode(compileAndExecute("'\\x7E'")));
