@@ -1,4 +1,6 @@
 import { encodeInt32, encodeUInt32 } from 'leb';
+import { tokenize } from './parse';
+import { TOKEN_TYPES } from './tokens';
 
 const utf8Encoder = new TextEncoder('utf-8');
 
@@ -50,30 +52,36 @@ function i32Const(num) {
   return new Uint8Array([0x10, ...encodeInt32(num)]);
 }
 
-const DECIMAL_LITERAL = /^\d+$/;
-const HEX_LITERAL = /^0x[\da-fA-F]+$/;
-const TRUE = /^true$/;
-const FALSE = /^false$/;
-const HEX_CHARACTER_LITERAL = /^'\\x[\da-fA-F]{2}'$/;
+function isImmediateValue(tokens) {
+  if (tokens.length !== 1) return false;
+  const token = tokens[0];
+  return token.type === TOKEN_TYPES.INTEGER ||
+         token.type === TOKEN_TYPES.BOOLEAN;
+}
 
 export default function compile(source) {
   let code;
 
-  if (DECIMAL_LITERAL.test(source)) {
-    const retValue = parseInt(source, 10);
-    code = codeSection(functionBody([], returnNode(1, i32Const(retValue))));
-  } else if (HEX_LITERAL.test(source)) {
-    const retValue = parseInt(source, 16);
-    code = codeSection(functionBody([], returnNode(1, i32Const(retValue))));
-  } else if (TRUE.test(source)) {
-    code = codeSection(functionBody([], returnNode(1, i32Const(1))));
-  } else if (FALSE.test(source)) {
-    code = codeSection(functionBody([], returnNode(1, i32Const(0))));
-  } else if (HEX_CHARACTER_LITERAL.test(source)) {
-    const retValue = parseInt(source.substr(3, 2), 16);
+  const tokens = tokenize(source);
+  if (isImmediateValue(tokens)) {
+    const token = tokens[0];
+    let retValue;
+
+    switch (token.type) {
+      case TOKEN_TYPES.INTEGER:
+        retValue = token.value;
+        break;
+      case TOKEN_TYPES.BOOLEAN:
+        retValue = token.value === false ? 0 : 1;
+        break;
+      default:
+        throw new Error(`Unexpected token type ${token.type}`);
+    }
+
     code = codeSection(functionBody([], returnNode(1, i32Const(retValue))));
   } else {
-    throw new Error('Unable to parse source');
+    console.log(tokens);
+    throw new Error('Not yet implemented');
   }
 
   return new Uint8Array([
