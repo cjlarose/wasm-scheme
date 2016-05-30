@@ -1,56 +1,6 @@
-import { encodeInt32, encodeUInt32 } from 'leb';
 import { tokenize } from './parse';
 import { TOKEN_TYPES } from './tokens';
-
-const utf8Encoder = new TextEncoder('utf-8');
-
-/*
- * http://www.2ality.com/2015/10/concatenating-typed-arrays.html
- */
-function concatenate(ResultConstructor, ...arrays) {
-  let totalLength = 0;
-  for (const arr of arrays) {
-    totalLength += arr.length;
-  }
-  const result = new ResultConstructor(totalLength);
-  let offset = 0;
-  for (const arr of arrays) {
-    result.set(arr, offset);
-    offset += arr.length;
-  }
-  return result;
-}
-
-function section(title, payload) {
-  const titleBytes = utf8Encoder.encode(title);
-  return new Uint8Array([...encodeUInt32(titleBytes.length),
-                         ...titleBytes,
-                         ...encodeUInt32(payload.length),
-                         ...payload]);
-}
-
-function codeSection(...functionBodies) {
-  return section('code', [...encodeUInt32(functionBodies.length),
-                          ...concatenate(Uint8Array, ...functionBodies)]);
-}
-
-function functionBody(localEntries, bodyAst) {
-  const localCount = encodeUInt32(localEntries.length);
-  const locals = concatenate(Uint8Array, ...localEntries);
-  const functionLength = localCount.length + locals.length + bodyAst.length;
-  return new Uint8Array([...encodeUInt32(functionLength),
-                         ...localCount,
-                         ...locals,
-                         ...bodyAst]);
-}
-
-function returnNode(numVals, valAst) {
-  return new Uint8Array([...valAst, 0x09, ...encodeUInt32(numVals)]);
-}
-
-function i32Const(num) {
-  return new Uint8Array([0x10, ...encodeInt32(num)]);
-}
+import { codeSection, functionBody, returnNode, i32Const } from './wasm_ast';
 
 function isImmediateValue(tokens) {
   if (tokens.length !== 1) return false;
