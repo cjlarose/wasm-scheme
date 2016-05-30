@@ -18,3 +18,5 @@ console.log(compileAndExecute('false'));
 // unary operations
 console.log(compileAndExecute('(negate 238)'));
 console.log(compileAndExecute('(negate 0xff)'));
+console.log(compileAndExecute('(not true)'));
+console.log(compileAndExecute('(not false)'));

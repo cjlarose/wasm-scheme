@@ -53,3 +53,7 @@ export function i32Const(num) {
 export function i32Sub(lhs, rhs) {
   return new Uint8Array([...lhs, ...rhs, 0x41]);
 }
+
+export function i32Xor(lhs, rhs) {
+  return new Uint8Array([...lhs, ...rhs, 0x49]);
+}
