@@ -1,6 +1,6 @@
 import { tokenize, parse } from './parse';
 import { TOKEN_TYPES } from './tokens';
-import { codeSection, functionBody, returnNode, i32Const, i32Sub, i32Xor } from './wasm_ast';
+import { codeSection, functionBody, returnNode, i32Const, i32Sub, i32Eqz } from './wasm_ast';
 
 function isImmediateValue(tokens) {
   if (tokens.length !== 1) return false;
@@ -36,7 +36,7 @@ export default function compile(source) {
       const functionText = returnNode(1, i32Sub(i32Const(0), i32Const(immediate.value)));
       code = codeSection(functionBody([], functionText));
     } else if (op.value === 'not' && immediate.type === TOKEN_TYPES.BOOLEAN) {
-      const functionText = returnNode(1, i32Xor(i32Const(1), i32Const(immediate.value)));
+      const functionText = returnNode(1, i32Eqz(i32Const(immediate.value)));
       code = codeSection(functionBody([], functionText));
     } else {
       throw new Error('Not yet implemented');

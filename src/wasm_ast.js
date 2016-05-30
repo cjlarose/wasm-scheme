@@ -57,3 +57,7 @@ export function i32Sub(lhs, rhs) {
 export function i32Xor(lhs, rhs) {
   return new Uint8Array([...lhs, ...rhs, 0x49]);
 }
+
+export function i32Eqz(operand) {
+  return new Uint8Array([...operand, 0x5a]);
+}
