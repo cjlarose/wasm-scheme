@@ -89,9 +89,33 @@ export function tokenize(program) {
   return tokens;
 }
 
-function parse(source) {
-  // returns [[], "remaining source"]
+function parse(tokens, start) {
+  const ast = [];
+  let pos = start;
+  if (tokens[pos].type !== TOKEN_TYPES.OPEN_PAREN) {
+    throw new Error(`Unexpected token type '${tokens[pos].type}'`);
+  }
+  pos++;
+
+  while (pos < tokens.length) {
+    const token = tokens[pos];
+    if (token.type === TOKEN_TYPES.CLOSE_PAREN) {
+      return [ast, pos + 1];
+    } else if (token.type === TOKEN_TYPES.OPEN_PAREN) {
+      const [newTokens, newPos] = parse(tokens, pos);
+      ast.push(newTokens);
+      pos = newPos;
+    } else {
+      ast.push(token);
+      pos++;
+    }
+  }
+
+  throw new Error('Unexpected end of input');
 }
 
 export default function parseProgram(source) {
+  const tokens = tokenize(source);
+  const result = parse(tokens, 0);
+  return result[0];
 }
