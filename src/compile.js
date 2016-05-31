@@ -29,11 +29,8 @@ function isImmediateValue(tokens) {
 function immediateRepr(token) {
   switch (token.type) {
     case TOKEN_TYPES.INTEGER:
-      // integer tag is 01
       return token.value << 2 | FIXNUM_TAG;
     case TOKEN_TYPES.BOOLEAN:
-      // false is 0 followed by tag 10
-      // true is 1 followed by tag 10
       return token.value << 2 | BOOLEAN_TAG;
     default:
       throw new Error(`Unexpected token type ${token.type}`);
