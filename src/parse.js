@@ -75,9 +75,10 @@ export function tokenize(program) {
     if (isLetter(ch)) {
       const chars = [ch];
       pos++;
-      while (isAlphanumeric(ch = program[pos])) {
+      ch = program[pos];
+      while (isAlphanumeric(ch) || ch === '?') {
         chars.push(ch);
-        pos++;
+        ch = program[++pos];
       }
       const lexeme = chars.join('');
       const reservedWordToken = reservedWords[lexeme];
