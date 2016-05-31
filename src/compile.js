@@ -69,7 +69,10 @@ export default function compile(source) {
                                         i32Const(2))));
     } else if (op.value === 'fixnum?') {
       expr = markBoolean(i32Eq(extractTag(i32Const(immediateRepr(immediate))),
-                               i32Const(1)));
+                               i32Const(FIXNUM_TAG)));
+    } else if (op.value === 'boolean?') {
+      expr = markBoolean(i32Eq(extractTag(i32Const(immediateRepr(immediate))),
+                               i32Const(BOOLEAN_TAG)));
     } else {
       throw new Error('Not yet implemented');
     }

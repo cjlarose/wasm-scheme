@@ -23,3 +23,6 @@ console.log(compileAndExecute('(not false)') >> 2);
 
 console.log(compileAndExecute('(fixnum? 238)') >> 2);
 console.log(compileAndExecute('(fixnum? false)') >> 2);
+
+console.log(compileAndExecute('(boolean? 238)') >> 2);
+console.log(compileAndExecute('(boolean? false)') >> 2);
