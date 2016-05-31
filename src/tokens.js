@@ -4,6 +4,8 @@ export const TOKEN_TYPES = {
   ID: 'ID',
   INTEGER: 'INTEGER',
   BOOLEAN: 'BOOLEAN',
+  PLUS: 'PLUS',
+  MINUS: 'MINUS',
 };
 
 export const singleCharacterTokens = {
