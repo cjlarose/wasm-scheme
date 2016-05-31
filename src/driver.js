@@ -7,6 +7,7 @@ function compileAndExecute(source) {
 }
 
 // literals
+console.log('Literals');
 console.log(compileAndExecute('238') >> 2);
 // console.log(compileAndExecute('-238'));
 console.log(compileAndExecute('0x1') >> 2);
@@ -16,6 +17,7 @@ console.log(compileAndExecute('false') >> 2);
 //console.log(String.fromCharCode(compileAndExecute("'\\x7E'")));
 
 // unary operations
+console.log('Unary operations');
 console.log(compileAndExecute('(negate 238)') >> 2);
 console.log(compileAndExecute('(negate 0xff)') >> 2);
 console.log(compileAndExecute('(not true)') >> 2);
@@ -28,7 +30,13 @@ console.log(compileAndExecute('(boolean? 238)') >> 2);
 console.log(compileAndExecute('(boolean? false)') >> 2);
 
 // binary operations
+console.log('Binary operations');
 console.log(compileAndExecute('(+ 55)') >> 2);
 console.log(compileAndExecute('(+ 45 55)') >> 2);
 console.log(compileAndExecute('(+ 45 55 50)') >> 2);
 console.log(compileAndExecute('(+ 45 55 50 100)') >> 2);
+
+console.log(compileAndExecute('(- 55)') >> 2);
+console.log(compileAndExecute('(- 55 5)') >> 2);
+console.log(compileAndExecute('(- 45 55 50)') >> 2);
+console.log(compileAndExecute('(- 45 55 50 100)') >> 2);

@@ -57,6 +57,7 @@ export default function compile(source) {
   } else {
     const ast = parse(tokens);
     const [op, ...operands] = ast;
+
     if (op.value === 'negate' && operands[0].type === TOKEN_TYPES.INTEGER) {
       expr = markFixnum(i32.sub(i32Const(0), extractFixnum(i32Const(immediateRepr(operands[0])))));
     } else if (op.value === 'not' && operands[0].type === TOKEN_TYPES.BOOLEAN) {
@@ -72,6 +73,16 @@ export default function compile(source) {
       const exprs = operands.map(operand => extractFixnum(i32Const(immediateRepr(operand))));
       const sum = exprs.reduce((sumExpr, operand) => i32.add(sumExpr, operand));
       expr = markFixnum(sum);
+    } else if (op.type === TOKEN_TYPES.MINUS) {
+      if (operands.length === 1) {
+        // TODO: Just call negate
+        expr = markFixnum(i32.sub(i32Const(0),
+                                  extractFixnum(i32Const(immediateRepr(operands[0])))));
+      } else {
+        const exprs = operands.map(operand => extractFixnum(i32Const(immediateRepr(operand))));
+        const sum = exprs.reduce((diffExpr, operand) => i32.sub(diffExpr, operand));
+        expr = markFixnum(sum);
+      }
     } else {
       throw new Error('Not yet implemented');
     }
