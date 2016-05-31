@@ -58,6 +58,10 @@ export function i32Sub(lhs, rhs) {
   return new Uint8Array([...lhs, ...rhs, 0x41]);
 }
 
+export function i32And(lhs, rhs) {
+  return new Uint8Array([...lhs, ...rhs, 0x47]);
+}
+
 export function i32Shl(lhs, rhs) {
   return new Uint8Array([...lhs, ...rhs, 0x4a]);
 }
@@ -68,6 +72,14 @@ export function i32ShrU(lhs, rhs) {
 
 export function i32ShrS(lhs, rhs) {
   return new Uint8Array([...lhs, ...rhs, 0x4c]);
+}
+
+export function i32Eq(lhs, rhs) {
+  return new Uint8Array([...lhs, ...rhs, 0x4d]);
+}
+
+export function i32Or(lhs, rhs) {
+  return new Uint8Array([...lhs, ...rhs, 0x48]);
 }
 
 export function i32Xor(lhs, rhs) {

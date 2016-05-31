@@ -7,11 +7,17 @@ import {
   i32Const,
   i32Add,
   i32Sub,
+  i32And,
+  i32Or,
   i32Shl,
   i32ShrU,
   i32ShrS,
+  i32Eq,
   i32Eqz,
 } from './wasm_ast';
+
+const FIXNUM_TAG = 1;
+const BOOLEAN_TAG = 2;
 
 function isImmediateValue(tokens) {
   if (tokens.length !== 1) return false;
@@ -24,14 +30,22 @@ function immediateRepr(token) {
   switch (token.type) {
     case TOKEN_TYPES.INTEGER:
       // integer tag is 01
-      return token.value << 2 | 1;
+      return token.value << 2 | FIXNUM_TAG;
     case TOKEN_TYPES.BOOLEAN:
       // false is 0 followed by tag 10
       // true is 1 followed by tag 10
-      return token.value === false ? 2 : 6;
+      return token.value << 2 | BOOLEAN_TAG;
     default:
       throw new Error(`Unexpected token type ${token.type}`);
   }
+}
+
+function markBoolean(exprAst) {
+  return i32Or(i32Shl(exprAst, i32Const(2)), i32Const(BOOLEAN_TAG));
+}
+
+function extractTag(exprAst) {
+  return i32And(exprAst, i32Const(3));
 }
 
 export default function compile(source) {
@@ -51,10 +65,11 @@ export default function compile(source) {
                            i32Const(2)),
                     i32Const(1));
     } else if (op.value === 'not' && immediate.type === TOKEN_TYPES.BOOLEAN) {
-      expr = i32Add(i32Shl(i32Eqz(i32ShrU(i32Const(immediateRepr(immediate)),
-                                          i32Const(2))),
-                           i32Const(2)),
-                    i32Const(2));
+      expr = markBoolean(i32Eqz(i32ShrU(i32Const(immediateRepr(immediate)),
+                                        i32Const(2))));
+    } else if (op.value === 'fixnum?') {
+      expr = markBoolean(i32Eq(extractTag(i32Const(immediateRepr(immediate))),
+                               i32Const(1)));
     } else {
       throw new Error('Not yet implemented');
     }

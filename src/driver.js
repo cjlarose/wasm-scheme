@@ -20,3 +20,6 @@ console.log(compileAndExecute('(negate 238)') >> 2);
 console.log(compileAndExecute('(negate 0xff)') >> 2);
 console.log(compileAndExecute('(not true)') >> 2);
 console.log(compileAndExecute('(not false)') >> 2);
+
+console.log(compileAndExecute('(fixnum? 238)') >> 2);
+console.log(compileAndExecute('(fixnum? false)') >> 2);
