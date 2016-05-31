@@ -68,6 +68,10 @@ export default function compile(source) {
     } else if (op.value === 'boolean?') {
       expr = markBoolean(i32.eq(extractTag(i32Const(immediateRepr(operands[0]))),
                                 i32Const(BOOLEAN_TAG)));
+    } else if (op.type === TOKEN_TYPES.PLUS) {
+      const exprs = operands.map(operand => extractFixnum(i32Const(immediateRepr(operand))));
+      const sum = exprs.reduce((sumExpr, operand) => i32.add(sumExpr, operand));
+      expr = markFixnum(sum);
     } else {
       throw new Error('Not yet implemented');
     }
