@@ -1,6 +1,17 @@
 import { tokenize, parse } from './parse';
 import { TOKEN_TYPES } from './tokens';
-import { codeSection, functionBody, returnNode, i32Const, i32Sub, i32Eqz } from './wasm_ast';
+import {
+  codeSection,
+  functionBody,
+  returnNode,
+  i32Const,
+  i32Add,
+  i32Sub,
+  i32Shl,
+  i32ShrU,
+  i32ShrS,
+  i32Eqz,
+} from './wasm_ast';
 
 function isImmediateValue(tokens) {
   if (tokens.length !== 1) return false;
@@ -9,39 +20,46 @@ function isImmediateValue(tokens) {
          token.type === TOKEN_TYPES.BOOLEAN;
 }
 
-export default function compile(source) {
-  let code;
+function immediateRepr(token) {
+  switch (token.type) {
+    case TOKEN_TYPES.INTEGER:
+      // integer tag is 01
+      return token.value << 2 | 1;
+    case TOKEN_TYPES.BOOLEAN:
+      // false is 0 followed by tag 10
+      // true is 1 followed by tag 10
+      return token.value === false ? 2 : 6;
+    default:
+      throw new Error(`Unexpected token type ${token.type}`);
+  }
+}
 
+export default function compile(source) {
+  let expr;
   const tokens = tokenize(source);
+
   if (isImmediateValue(tokens)) {
     const token = tokens[0];
-    let retValue;
-
-    switch (token.type) {
-      case TOKEN_TYPES.INTEGER:
-        retValue = token.value;
-        break;
-      case TOKEN_TYPES.BOOLEAN:
-        retValue = token.value === false ? 0 : 1;
-        break;
-      default:
-        throw new Error(`Unexpected token type ${token.type}`);
-    }
-
-    code = codeSection(functionBody([], returnNode(1, i32Const(retValue))));
+    const retValue = immediateRepr(token);
+    expr = returnNode(1, i32Const(retValue));
   } else {
     const ast = parse(tokens);
     const [op, immediate] = ast;
     if (op.value === 'negate' && immediate.type === TOKEN_TYPES.INTEGER) {
-      const functionText = returnNode(1, i32Sub(i32Const(0), i32Const(immediate.value)));
-      code = codeSection(functionBody([], functionText));
+      expr = i32Add(i32Shl(i32Sub(i32Const(0),
+                                  i32ShrS(i32Const(immediateRepr(immediate)), i32Const(2))),
+                           i32Const(2)),
+                    i32Const(1));
     } else if (op.value === 'not' && immediate.type === TOKEN_TYPES.BOOLEAN) {
-      const functionText = returnNode(1, i32Eqz(i32Const(immediate.value)));
-      code = codeSection(functionBody([], functionText));
+      expr = i32Add(i32Shl(i32Eqz(i32ShrU(i32Const(immediateRepr(immediate)),
+                                          i32Const(2))),
+                           i32Const(2)),
+                    i32Const(2));
     } else {
       throw new Error('Not yet implemented');
     }
   }
+  const code = codeSection(functionBody([], returnNode(1, expr)));
 
   return new Uint8Array([
     /* Magic number, version (11) */

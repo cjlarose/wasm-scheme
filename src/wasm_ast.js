@@ -50,8 +50,24 @@ export function i32Const(num) {
   return new Uint8Array([0x10, ...encodeInt32(num)]);
 }
 
+export function i32Add(lhs, rhs) {
+  return new Uint8Array([...lhs, ...rhs, 0x40]);
+}
+
 export function i32Sub(lhs, rhs) {
   return new Uint8Array([...lhs, ...rhs, 0x41]);
+}
+
+export function i32Shl(lhs, rhs) {
+  return new Uint8Array([...lhs, ...rhs, 0x4a]);
+}
+
+export function i32ShrU(lhs, rhs) {
+  return new Uint8Array([...lhs, ...rhs, 0x4b]);
+}
+
+export function i32ShrS(lhs, rhs) {
+  return new Uint8Array([...lhs, ...rhs, 0x4c]);
 }
 
 export function i32Xor(lhs, rhs) {

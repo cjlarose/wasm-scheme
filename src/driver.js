@@ -7,16 +7,16 @@ function compileAndExecute(source) {
 }
 
 // literals
-console.log(compileAndExecute('238'));
+console.log(compileAndExecute('238') >> 2);
 // console.log(compileAndExecute('-238'));
-console.log(compileAndExecute('0x1'));
-console.log(compileAndExecute('0x99ccff'));
-console.log(compileAndExecute('true'));
-console.log(compileAndExecute('false'));
+console.log(compileAndExecute('0x1') >> 2);
+console.log(compileAndExecute('0x99ccff') >> 2);
+console.log(compileAndExecute('true') >> 2);
+console.log(compileAndExecute('false') >> 2);
 //console.log(String.fromCharCode(compileAndExecute("'\\x7E'")));
 
 // unary operations
-console.log(compileAndExecute('(negate 238)'));
-console.log(compileAndExecute('(negate 0xff)'));
-console.log(compileAndExecute('(not true)'));
-console.log(compileAndExecute('(not false)'));
+console.log(compileAndExecute('(negate 238)') >> 2);
+console.log(compileAndExecute('(negate 0xff)') >> 2);
+console.log(compileAndExecute('(not true)') >> 2);
+console.log(compileAndExecute('(not false)') >> 2);
