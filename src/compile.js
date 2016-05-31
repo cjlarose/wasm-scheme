@@ -5,16 +5,9 @@ import {
   functionBody,
   returnNode,
   i32Const,
-  i32Add,
-  i32Sub,
-  i32And,
-  i32Or,
-  i32Shl,
-  i32ShrU,
-  i32ShrS,
-  i32Eq,
-  i32Eqz,
 } from './wasm_ast';
+
+import { i32 } from './wasm_ast/simple_ops';
 
 const FIXNUM_TAG = 1;
 const BOOLEAN_TAG = 2;
@@ -38,11 +31,11 @@ function immediateRepr(token) {
 }
 
 function markBoolean(exprAst) {
-  return i32Or(i32Shl(exprAst, i32Const(2)), i32Const(BOOLEAN_TAG));
+  return i32.or(i32.shl(exprAst, i32Const(2)), i32Const(BOOLEAN_TAG));
 }
 
 function extractTag(exprAst) {
-  return i32And(exprAst, i32Const(3));
+  return i32.and(exprAst, i32Const(3));
 }
 
 export default function compile(source) {
@@ -57,19 +50,19 @@ export default function compile(source) {
     const ast = parse(tokens);
     const [op, immediate] = ast;
     if (op.value === 'negate' && immediate.type === TOKEN_TYPES.INTEGER) {
-      expr = i32Add(i32Shl(i32Sub(i32Const(0),
-                                  i32ShrS(i32Const(immediateRepr(immediate)), i32Const(2))),
-                           i32Const(2)),
-                    i32Const(1));
+      expr = i32.add(i32.shl(i32.sub(i32Const(0),
+                                     i32.shrS(i32Const(immediateRepr(immediate)), i32Const(2))),
+                             i32Const(2)),
+                     i32Const(1));
     } else if (op.value === 'not' && immediate.type === TOKEN_TYPES.BOOLEAN) {
-      expr = markBoolean(i32Eqz(i32ShrU(i32Const(immediateRepr(immediate)),
-                                        i32Const(2))));
+      expr = markBoolean(i32.eqz(i32.shrU(i32Const(immediateRepr(immediate)),
+                                          i32Const(2))));
     } else if (op.value === 'fixnum?') {
-      expr = markBoolean(i32Eq(extractTag(i32Const(immediateRepr(immediate))),
-                               i32Const(FIXNUM_TAG)));
+      expr = markBoolean(i32.eq(extractTag(i32Const(immediateRepr(immediate))),
+                                i32Const(FIXNUM_TAG)));
     } else if (op.value === 'boolean?') {
-      expr = markBoolean(i32Eq(extractTag(i32Const(immediateRepr(immediate))),
-                               i32Const(BOOLEAN_TAG)));
+      expr = markBoolean(i32.eq(extractTag(i32Const(immediateRepr(immediate))),
+                                i32Const(BOOLEAN_TAG)));
     } else {
       throw new Error('Not yet implemented');
     }
