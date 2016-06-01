@@ -58,9 +58,7 @@ export default function compile(source) {
     const ast = parse(tokens);
     const [op, ...operands] = ast;
 
-    if (op.value === 'negate' && operands[0].type === TOKEN_TYPES.INTEGER) {
-      expr = markFixnum(i32.sub(i32Const(0), extractFixnum(i32Const(immediateRepr(operands[0])))));
-    } else if (op.value === 'not' && operands[0].type === TOKEN_TYPES.BOOLEAN) {
+    if (op.value === 'not' && operands[0].type === TOKEN_TYPES.BOOLEAN) {
       expr = markBoolean(i32.eqz(i32.shrU(i32Const(immediateRepr(operands[0])),
                                           i32Const(2))));
     } else if (op.value === 'fixnum?') {
@@ -75,7 +73,6 @@ export default function compile(source) {
       expr = markFixnum(sum);
     } else if (op.type === TOKEN_TYPES.MINUS) {
       if (operands.length === 1) {
-        // TODO: Just call negate
         expr = markFixnum(i32.sub(i32Const(0),
                                   extractFixnum(i32Const(immediateRepr(operands[0])))));
       } else {
