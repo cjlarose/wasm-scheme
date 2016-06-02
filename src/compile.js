@@ -46,44 +46,40 @@ function extractFixnum(exprAst) {
   return i32.shrS(exprAst, i32Const(2));
 }
 
-export default function compile(source) {
-  let expr;
-  const tokens = tokenize(source);
-
-  if (isImmediateValue(tokens)) {
-    const token = tokens[0];
-    const retValue = immediateRepr(token);
-    expr = returnNode(1, i32Const(retValue));
-  } else {
-    const ast = parse(tokens);
-    const [op, ...operands] = ast;
+// CL form -> WASM expression(s)
+function generateCode(formOrImmediate) {
+  if (Array.isArray(formOrImmediate)) {
+    const [op, ...operands] = formOrImmediate;
 
     if (op.value === 'not' && operands[0].type === TOKEN_TYPES.BOOLEAN) {
-      expr = markBoolean(i32.eqz(i32.shrU(i32Const(immediateRepr(operands[0])),
-                                          i32Const(2))));
+      return markBoolean(i32.eqz(i32.shrU(generateCode(operands[0]), i32Const(2))));
     } else if (op.value === 'fixnum?') {
-      expr = markBoolean(i32.eq(extractTag(i32Const(immediateRepr(operands[0]))),
-                                i32Const(FIXNUM_TAG)));
+      return markBoolean(i32.eq(extractTag(generateCode(operands[0])), i32Const(FIXNUM_TAG)));
     } else if (op.value === 'boolean?') {
-      expr = markBoolean(i32.eq(extractTag(i32Const(immediateRepr(operands[0]))),
-                                i32Const(BOOLEAN_TAG)));
+      return markBoolean(i32.eq(extractTag(generateCode(operands[0])), i32Const(BOOLEAN_TAG)));
     } else if (op.type === TOKEN_TYPES.PLUS) {
-      const exprs = operands.map(operand => extractFixnum(i32Const(immediateRepr(operand))));
+      const exprs = operands.map(operand => extractFixnum(generateCode(operand)));
       const sum = exprs.reduce((sumExpr, operand) => i32.add(sumExpr, operand));
-      expr = markFixnum(sum);
+      return markFixnum(sum);
     } else if (op.type === TOKEN_TYPES.MINUS) {
       if (operands.length === 1) {
-        expr = markFixnum(i32.sub(i32Const(0),
-                                  extractFixnum(i32Const(immediateRepr(operands[0])))));
-      } else {
-        const exprs = operands.map(operand => extractFixnum(i32Const(immediateRepr(operand))));
-        const sum = exprs.reduce((diffExpr, operand) => i32.sub(diffExpr, operand));
-        expr = markFixnum(sum);
+        return markFixnum(i32.sub(i32Const(0), extractFixnum(generateCode(operands[0]))));
       }
-    } else {
-      throw new Error('Not yet implemented');
+
+      const exprs = operands.map(operand => extractFixnum(generateCode(operand)));
+      const sum = exprs.reduce((diffExpr, operand) => i32.sub(diffExpr, operand));
+      return markFixnum(sum);
     }
+
+    throw new Error('Not yet implemented');
   }
+
+  return i32Const(immediateRepr(formOrImmediate));
+}
+
+export default function compile(source) {
+  const tokens = tokenize(source);
+  const expr = generateCode(isImmediateValue(tokens) ? tokens[0] : parse(tokens));
   const code = codeSection(functionBody([], returnNode(1, expr)));
 
   return new Uint8Array([
