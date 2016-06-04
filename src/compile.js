@@ -1,10 +1,14 @@
+import { concatenate } from './util';
 import { tokenize, parse } from './parse';
 import { TOKEN_TYPES } from './tokens';
 import {
   codeSection,
   functionBody,
+  block,
   returnNode,
   i32Const,
+  getLocal,
+  setLocal,
 } from './wasm_ast';
 
 import { i32 } from './wasm_ast/simple_ops';
@@ -47,40 +51,83 @@ function extractFixnum(exprAst) {
 }
 
 // CL form -> WASM expression(s)
-function generateCode(formOrImmediate) {
+function compileExpression(formOrImmediate, locals, env) {
   if (Array.isArray(formOrImmediate)) {
     const [op, ...operands] = formOrImmediate;
 
     if (op.value === 'not' && operands[0].type === TOKEN_TYPES.BOOLEAN) {
-      return markBoolean(i32.eqz(i32.shrU(generateCode(operands[0]), i32Const(2))));
+      return markBoolean(i32.eqz(i32.shrU(compileExpression(operands[0], locals, env),
+                                          i32Const(2))));
     } else if (op.value === 'fixnum?') {
-      return markBoolean(i32.eq(extractTag(generateCode(operands[0])), i32Const(FIXNUM_TAG)));
+      return markBoolean(i32.eq(extractTag(compileExpression(operands[0], locals, env)),
+                                i32Const(FIXNUM_TAG)));
     } else if (op.value === 'boolean?') {
-      return markBoolean(i32.eq(extractTag(generateCode(operands[0])), i32Const(BOOLEAN_TAG)));
+      return markBoolean(i32.eq(extractTag(compileExpression(operands[0], locals, env)),
+                                i32Const(BOOLEAN_TAG)));
     } else if (op.type === TOKEN_TYPES.PLUS) {
-      const exprs = operands.map(operand => extractFixnum(generateCode(operand)));
+      const exprs = operands.map(operand => extractFixnum(compileExpression(operand, locals, env)));
       const sum = exprs.reduce((sumExpr, operand) => i32.add(sumExpr, operand));
       return markFixnum(sum);
     } else if (op.type === TOKEN_TYPES.MINUS) {
       if (operands.length === 1) {
-        return markFixnum(i32.sub(i32Const(0), extractFixnum(generateCode(operands[0]))));
+        return markFixnum(i32.sub(i32Const(0),
+                                  extractFixnum(compileExpression(operands[0], locals, env))));
       }
 
-      const exprs = operands.map(operand => extractFixnum(generateCode(operand)));
+      const exprs = operands.map(operand => extractFixnum(compileExpression(operand, locals, env)));
       const sum = exprs.reduce((diffExpr, operand) => i32.sub(diffExpr, operand));
       return markFixnum(sum);
+    } else if (op.value === 'let') {
+      const [bindings, ...exprs] = operands;
+
+      const newBindings = {};
+      for (const [nameToken] of bindings) {
+        const name = nameToken.value;
+        const localIndex = locals.length;
+        locals.push({ name, type: 'i32' });
+        newBindings[name] = localIndex;
+      }
+
+      const bindingExprs = bindings.map(
+        ([name, expr]) => setLocal(newBindings[name.value], compileExpression(expr, locals, env))
+      );
+
+      const newEnv = Object.assign({}, env, newBindings);
+      const bodyCode = exprs.map(expr => compileExpression(expr, locals, newEnv));
+      return block([...concatenate(Uint8Array, ...bindingExprs),
+                    ...concatenate(Uint8Array, ...bodyCode)]);
     }
 
     throw new Error('Not yet implemented');
   }
 
+  if (formOrImmediate.type === TOKEN_TYPES.ID) {
+    const name = formOrImmediate.value;
+    if (!env.hasOwnProperty(name)) {
+      throw new Error(`Undefined variable '${name}'`);
+    }
+    return getLocal(env[name]);
+  }
+
   return i32Const(immediateRepr(formOrImmediate));
+}
+
+function compileFunction(tokens) {
+  if (isImmediateValue(tokens)) {
+    const expr = i32Const(immediateRepr(tokens[0]));
+    return functionBody([], returnNode(1, expr));
+  }
+
+  const locals = [];
+  const form = parse(tokens);
+  const expr = compileExpression(form, locals, {});
+  const fb = functionBody(locals, returnNode(1, expr));
+  return fb;
 }
 
 export default function compile(source) {
   const tokens = tokenize(source);
-  const expr = generateCode(isImmediateValue(tokens) ? tokens[0] : parse(tokens));
-  const code = codeSection(functionBody([], returnNode(1, expr)));
+  const code = codeSection(compileFunction(tokens));
 
   return new Uint8Array([
     /* Magic number, version (11) */

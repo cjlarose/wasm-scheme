@@ -38,3 +38,6 @@ console.log(compileAndExecute('(- 55)') >> 2);
 console.log(compileAndExecute('(- 55 5)') >> 2);
 console.log(compileAndExecute('(- 45 55 50)') >> 2);
 console.log(compileAndExecute('(- 45 55 50 100)') >> 2);
+
+// local variables
+console.log(compileAndExecute('(let ((a 0xFF) (b 1)) (+ a b))') >> 2);
