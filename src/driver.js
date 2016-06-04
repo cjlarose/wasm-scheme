@@ -42,3 +42,9 @@ console.log(compileAndExecute('(- 45 55 50 100)') >> 2);
 // local variables
 console.log('Local variables');
 console.log(compileAndExecute('(let ((a 0xFF) (b 1)) (+ a b))') >> 2);
+
+// conditionals
+console.log('Conditionals');
+console.log(compileAndExecute('(if t 1 2)') >> 2);
+console.log(compileAndExecute('(if nil 1 2)') >> 2);
+console.log(compileAndExecute('(if nil 1)') >> 2);

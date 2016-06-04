@@ -26,6 +26,10 @@ function i32Eq(lhs, rhs) {
   return new Uint8Array([...lhs, ...rhs, 0x4d]);
 }
 
+function i32Ne(lhs, rhs) {
+  return new Uint8Array([...lhs, ...rhs, 0x4e]);
+}
+
 function i32Or(lhs, rhs) {
   return new Uint8Array([...lhs, ...rhs, 0x48]);
 }
@@ -46,6 +50,7 @@ export const i32 = {
   shrU: i32ShrU,
   shrS: i32ShrS,
   eq: i32Eq,
+  ne: i32Ne,
   or: i32Or,
   xor: i32Xor,
   eqz: i32Eqz,

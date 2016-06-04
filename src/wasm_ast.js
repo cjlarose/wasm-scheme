@@ -44,6 +44,10 @@ export function block(body) {
   return new Uint8Array([0x01, ...body, 0x0f]);
 }
 
+export function ifElse(thenAst, elseAst) {
+  return new Uint8Array([0x03, ...thenAst, 0x04, ...elseAst, 0x0f]);
+}
+
 export function returnNode(numVals, valAst) {
   return new Uint8Array([...valAst, 0x09, ...encodeUInt32(numVals)]);
 }

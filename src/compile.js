@@ -1,10 +1,11 @@
 import { concatenate } from './util';
 import { tokenize, parse } from './parse';
-import { TOKEN_TYPES } from './tokens';
+import { TOKEN_TYPES, reservedWords } from './tokens';
 import {
   codeSection,
   functionBody,
   block,
+  ifElse,
   returnNode,
   i32Const,
   getLocal,
@@ -33,6 +34,8 @@ function immediateRepr(token) {
       throw new Error(`Unexpected token type ${token.type}`);
   }
 }
+
+const NIL = i32Const(immediateRepr(reservedWords.nil));
 
 function markFixnum(exprAst) {
   return i32.or(i32.shl(exprAst, i32Const(2)), i32Const(FIXNUM_TAG));
@@ -96,6 +99,13 @@ function compileExpression(formOrImmediate, locals, env) {
       const bodyCode = exprs.map(expr => compileExpression(expr, locals, newEnv));
       return block([...concatenate(Uint8Array, ...bindingExprs),
                     ...concatenate(Uint8Array, ...bodyCode)]);
+    } else if (op.value === 'if') {
+      const [testForm, thenForm, elseForm] = operands;
+
+      const testCode = i32.ne(compileExpression(testForm, locals, env), NIL);
+      const thenCode = compileExpression(thenForm, locals, env);
+      const elseCode = elseForm ? compileExpression(elseForm, locals, env) : NIL;
+      return concatenate(Uint8Array, testCode, ifElse(thenCode, elseCode));
     }
 
     throw new Error('Not yet implemented');
