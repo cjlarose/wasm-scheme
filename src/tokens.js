@@ -16,8 +16,8 @@ export const singleCharacterTokens = {
 };
 
 export const reservedWords = {
-  true: { type: TOKEN_TYPES.BOOLEAN,
-          value: true },
-  false: { type: TOKEN_TYPES.BOOLEAN,
-           value: false },
+  t: { type: TOKEN_TYPES.BOOLEAN,
+       value: true },
+  nil: { type: TOKEN_TYPES.BOOLEAN,
+         value: false },
 };

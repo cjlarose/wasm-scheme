@@ -12,20 +12,20 @@ console.log(compileAndExecute('238') >> 2);
 // console.log(compileAndExecute('-238'));
 console.log(compileAndExecute('0x1') >> 2);
 console.log(compileAndExecute('0x99ccff') >> 2);
-console.log(compileAndExecute('true') >> 2);
-console.log(compileAndExecute('false') >> 2);
+console.log(compileAndExecute('t') >> 2);
+console.log(compileAndExecute('nil') >> 2);
 //console.log(String.fromCharCode(compileAndExecute("'\\x7E'")));
 
 // unary operations
 console.log('Unary operations');
-console.log(compileAndExecute('(not true)') >> 2);
-console.log(compileAndExecute('(not false)') >> 2);
+console.log(compileAndExecute('(not t)') >> 2);
+console.log(compileAndExecute('(not nil)') >> 2);
 
 console.log(compileAndExecute('(fixnum? 238)') >> 2);
-console.log(compileAndExecute('(fixnum? false)') >> 2);
+console.log(compileAndExecute('(fixnum? nil)') >> 2);
 
 console.log(compileAndExecute('(boolean? 238)') >> 2);
-console.log(compileAndExecute('(boolean? false)') >> 2);
+console.log(compileAndExecute('(boolean? nil)') >> 2);
 
 // binary operations
 console.log('Binary operations');
