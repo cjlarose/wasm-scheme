@@ -15,9 +15,11 @@ import {
 } from './wasm_ast';
 
 import { i32 } from './wasm_ast/simple_ops';
+import { i32Load, i32Store } from './wasm_ast/memory_access';
 
 const FIXNUM_TAG = 1;
 const BOOLEAN_TAG = 2;
+const CONS_TAG = 3;
 
 function isImmediateValue(tokens) {
   if (tokens.length !== 1) return false;
@@ -47,12 +49,26 @@ function markBoolean(exprAst) {
   return i32.or(i32.shl(exprAst, i32Const(2)), i32Const(BOOLEAN_TAG));
 }
 
+function markCons(pointerAst) {
+  return i32.or(pointerAst, i32Const(CONS_TAG));
+}
+
 function extractTag(exprAst) {
   return i32.and(exprAst, i32Const(3));
 }
 
 function extractFixnum(exprAst) {
   return i32.shrS(exprAst, i32Const(2));
+}
+
+function alloc(locals, numBytes) {
+  // produce code that increments the allocation pointer by numBytes and
+  // returns the old allocation pointer
+  locals.push({ name: 'allocationPointer', type: 'i32' });
+  const idx = locals.length;
+  return block([...setLocal(idx, getLocal(0)),
+                ...setLocal(0, i32.add(getLocal(0), i32Const(numBytes))),
+                ...getLocal(idx)]);
 }
 
 // CL form -> WASM expression(s)
@@ -110,6 +126,14 @@ function compileExpression(formOrImmediate, locals, env) {
       const thenCode = compileExpression(thenForm, locals, env);
       const elseCode = elseForm ? compileExpression(elseForm, locals, env) : NIL;
       return concatenate(Uint8Array, testCode, ifElse(thenCode, elseCode));
+    } else if (op.value === 'cons') {
+      const [carForm, cdrForm] = operands;
+      const carCode = compileExpression(carForm, locals, env);
+      const cdrCode = compileExpression(cdrForm, locals, env);
+      const code = block([...i32Store(getLocal(0), carCode),
+                          ...i32Store(getLocal(0), cdrCode, 4),
+                          ...markCons(alloc(locals, 8))]);
+      return code;
     }
 
     throw new Error('Not yet implemented');

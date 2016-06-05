@@ -48,3 +48,11 @@ console.log('Conditionals');
 console.log(compileAndExecute('(if t 1 2)') >> 2);
 console.log(compileAndExecute('(if nil 1 2)') >> 2);
 console.log(compileAndExecute('(if nil 1)') >> 2);
+
+// conses
+console.log('Conses');
+console.log(compileAndExecute('(cons 1 2)') >> 2);
+console.log(compileAndExecute('(cons 1 nil)') >> 2);
+console.log(compileAndExecute(`(let ()
+                                 (cons 1 nil)
+                                 (cons 2 3))`));
