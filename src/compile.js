@@ -2,6 +2,8 @@ import { concatenate } from './util';
 import { tokenize, parse } from './parse';
 import { TOKEN_TYPES, reservedWords } from './tokens';
 import {
+  typeEntry,
+  typeSection,
   codeSection,
   functionBody,
   block,
@@ -86,8 +88,10 @@ function compileExpression(formOrImmediate, locals, env) {
       const newBindings = {};
       for (const [nameToken] of bindings) {
         const name = nameToken.value;
-        const localIndex = locals.length;
         locals.push({ name, type: 'i32' });
+        // localIndex starts at 1 because 0 is a parameter.
+        // This is a straight-up hack
+        const localIndex = locals.length;
         newBindings[name] = localIndex;
       }
 
@@ -143,10 +147,7 @@ export default function compile(source) {
     /* Magic number, version (11) */
     0x00, 0x61, 0x73, 0x6d, 0x0b, 0x00, 0x00, 0x00,
 
-    /* section title length (4), section title "type", payload length (5) */
-    0x04, 0x74, 0x79, 0x70, 0x65, 0x85, 0x80, 0x80, 0x80, 0x00,
-    /* Entry count (1), Function, param count (0), return count (1), return type i32 */
-    0x01, 0x40, 0x00, 0x01, 0x01,
+    ...typeSection(typeEntry([{ type: 'i32' }], 1, 'i32')),
 
     /* section title length (8), section title "function" */
     0x08, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e,

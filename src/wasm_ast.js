@@ -2,8 +2,14 @@ import { encodeInt32, encodeUInt32 } from 'leb';
 import { concatenate } from './util';
 
 const utf8Encoder = new TextEncoder('utf-8');
+const typeRepr = {
+  i32: 0x01,
+  i64: 0x02,
+  f32: 0x03,
+  f64: 0x04,
+};
 
-export function section(title, payload) {
+function section(title, payload) {
   const titleBytes = utf8Encoder.encode(title);
   return new Uint8Array([...encodeUInt32(titleBytes.length),
                          ...titleBytes,
@@ -11,18 +17,26 @@ export function section(title, payload) {
                          ...payload]);
 }
 
+export function typeEntry(params, returnCount, returnType) {
+  const paramTypes = params.map(p => typeRepr[p.type]);
+  return new Uint8Array([0x40,
+                         ...encodeUInt32(params.length),
+                         ...paramTypes,
+                         ...encodeUInt32(returnCount),
+                         typeRepr[returnType]]);
+}
+
+export function typeSection(...typeEntries) {
+  return section('type', new Uint8Array([...encodeUInt32(typeEntries.length),
+                                         ...concatenate(Uint8Array, ...typeEntries)]));
+}
+
 export function codeSection(...functionBodies) {
-  return section('code', [...encodeUInt32(functionBodies.length),
-                          ...concatenate(Uint8Array, ...functionBodies)]);
+  return section('code', new Uint8Array([...encodeUInt32(functionBodies.length),
+                                         ...concatenate(Uint8Array, ...functionBodies)]));
 }
 
 function localEntry(count, type) {
-  const typeRepr = {
-    i32: 0x01,
-    i64: 0x02,
-    f32: 0x03,
-    f64: 0x04,
-  };
   return new Uint8Array([...encodeUInt32(count),
                          typeRepr[type]]);
 }

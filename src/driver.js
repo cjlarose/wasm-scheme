@@ -3,7 +3,7 @@ import compile from './compile';
 function compileAndExecute(source) {
   const view = compile(source);
   const wasmModule = Wasm.instantiateModule(view, {});
-  return wasmModule.exports.entry();
+  return wasmModule.exports.entry(0);
 }
 
 // literals
