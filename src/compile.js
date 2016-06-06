@@ -71,6 +71,11 @@ function alloc(locals, numBytes) {
                 ...getLocal(idx)]);
 }
 
+function ifExpression(test, thenCode, elseCode = NIL) {
+  const testCode = i32.ne(test, NIL);
+  return concatenate(Uint8Array, testCode, ifElse(thenCode, elseCode));
+}
+
 // CL form -> WASM expression(s)
 function compileExpression(formOrImmediate, locals, env) {
   if (Array.isArray(formOrImmediate)) {
@@ -121,11 +126,9 @@ function compileExpression(formOrImmediate, locals, env) {
                     ...concatenate(Uint8Array, ...bodyCode)]);
     } else if (op.value === 'if') {
       const [testForm, thenForm, elseForm] = operands;
-
-      const testCode = i32.ne(compileExpression(testForm, locals, env), NIL);
-      const thenCode = compileExpression(thenForm, locals, env);
-      const elseCode = elseForm ? compileExpression(elseForm, locals, env) : NIL;
-      return concatenate(Uint8Array, testCode, ifElse(thenCode, elseCode));
+      return ifExpression(compileExpression(testForm, locals, env),
+                          compileExpression(thenForm, locals, env),
+                          elseForm ? compileExpression(elseForm, locals, env) : undefined);
     } else if (op.value === 'cons') {
       const [carForm, cdrForm] = operands;
       const carCode = compileExpression(carForm, locals, env);
