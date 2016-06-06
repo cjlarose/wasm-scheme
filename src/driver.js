@@ -1,60 +1,62 @@
 import compile from './compile';
 
 function compileAndExecute(source) {
+  console.log(source);
   const view = compile(source);
   const wasmModule = Wasm.instantiateModule(view, {});
-  return wasmModule.exports.entry(0);
+  const result = wasmModule.exports.entry(0);
+  console.log(result >> 2);
 }
 
 // literals
 console.log('Literals');
-console.log(compileAndExecute('238') >> 2);
-// console.log(compileAndExecute('-238'));
-console.log(compileAndExecute('0x1') >> 2);
-console.log(compileAndExecute('0x99ccff') >> 2);
-console.log(compileAndExecute('t') >> 2);
-console.log(compileAndExecute('nil') >> 2);
-//console.log(String.fromCharCode(compileAndExecute("'\\x7E'")));
+compileAndExecute('238');
+// compileAndExecute('-238');
+compileAndExecute('0x1');
+compileAndExecute('0x99ccff');
+compileAndExecute('t');
+compileAndExecute('nil');
+//String.fromCharCode(compileAndExecute("'\\x7E'"));
 
 // unary operations
 console.log('Unary operations');
-console.log(compileAndExecute('(not t)') >> 2);
-console.log(compileAndExecute('(not nil)') >> 2);
+compileAndExecute('(not t)');
+compileAndExecute('(not nil)');
 
-console.log(compileAndExecute('(fixnum? 238)') >> 2);
-console.log(compileAndExecute('(fixnum? nil)') >> 2);
+compileAndExecute('(fixnum? 238)');
+compileAndExecute('(fixnum? nil)');
 
-console.log(compileAndExecute('(boolean? 238)') >> 2);
-console.log(compileAndExecute('(boolean? nil)') >> 2);
+compileAndExecute('(boolean? 238)');
+compileAndExecute('(boolean? nil)');
 
 // binary operations
 console.log('Binary operations');
-console.log(compileAndExecute('(+ 55)') >> 2);
-console.log(compileAndExecute('(+ 45 55)') >> 2);
-console.log(compileAndExecute('(+ 45 55 50)') >> 2);
-console.log(compileAndExecute('(+ 45 55 50 100)') >> 2);
+compileAndExecute('(+ 55)');
+compileAndExecute('(+ 45 55)');
+compileAndExecute('(+ 45 55 50)');
+compileAndExecute('(+ 45 55 50 100)');
 
-console.log(compileAndExecute('(- 55)') >> 2);
-console.log(compileAndExecute('(- 55 5)') >> 2);
-console.log(compileAndExecute('(- 45 55 50)') >> 2);
-console.log(compileAndExecute('(- 45 55 50 100)') >> 2);
+compileAndExecute('(- 55)');
+compileAndExecute('(- 55 5)');
+compileAndExecute('(- 45 55 50)');
+compileAndExecute('(- 45 55 50 100)');
 
 // local variables
 console.log('Local variables');
-console.log(compileAndExecute('(let ((a 0xFF) (b 1)) (+ a b))') >> 2);
+compileAndExecute('(let ((a 0xFF) (b 1)) (+ a b))');
 
 // conditionals
 console.log('Conditionals');
-console.log(compileAndExecute('(if t 1 2)') >> 2);
-console.log(compileAndExecute('(if nil 1 2)') >> 2);
-console.log(compileAndExecute('(if nil 1)') >> 2);
+compileAndExecute('(if t 1 2)');
+compileAndExecute('(if nil 1 2)');
+compileAndExecute('(if nil 1)');
 
 // conses
 console.log('Conses');
-console.log(compileAndExecute('(cons 1 2)') >> 2);
-console.log(compileAndExecute('(cons 1 nil)') >> 2);
-console.log(compileAndExecute(`(let ()
-                                 (cons 1 nil)
-                                 (cons 2 3))`));
-console.log(compileAndExecute('(car (cons 8 2))') >> 2);
-console.log(compileAndExecute('(car nil)') >> 2);
+compileAndExecute('(cons 1 2)');
+compileAndExecute('(cons 1 nil)');
+compileAndExecute(`(let ()
+                     (cons 1 nil)
+                     (cons 2 3))`);
+compileAndExecute('(car (cons 8 2))');
+compileAndExecute('(car nil)');
