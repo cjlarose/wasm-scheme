@@ -145,8 +145,7 @@ function compileExpression(formOrImmediate, locals, env) {
     } else if (op.value === 'cdr') {
       const [valForm] = operands;
       const address = compileExpression(valForm, locals, env);
-      return ifExpression(address,
-                          i32Load(i32.add(address, i32Const(1))));
+      return ifExpression(address, i32Load(address, 1));
     }
 
     throw new Error('Not yet implemented');
