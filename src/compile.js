@@ -140,7 +140,8 @@ function compileExpression(formOrImmediate, locals, env) {
     } else if (op.value === 'car') {
       const [valAst] = operands;
       const address = compileExpression(valAst, locals, env);
-      return i32Load(i32.sub(address, i32Const(CONS_TAG)));
+      return ifExpression(address,
+                          i32Load(i32.sub(address, i32Const(CONS_TAG))));
     }
 
     throw new Error('Not yet implemented');
