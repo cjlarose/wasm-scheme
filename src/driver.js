@@ -56,3 +56,4 @@ console.log(compileAndExecute('(cons 1 nil)') >> 2);
 console.log(compileAndExecute(`(let ()
                                  (cons 1 nil)
                                  (cons 2 3))`));
+console.log(compileAndExecute('(car (cons 8 2))') >> 2);
