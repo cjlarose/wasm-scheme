@@ -62,3 +62,10 @@ compileAndExecute('(car (cons 8 2))');
 compileAndExecute('(car nil)');
 compileAndExecute('(cdr (cons 8 104))');
 compileAndExecute('(cdr nil)');
+
+compileAndExecute('(cons 5 nil)');
+compileAndExecute('(cons 8 (cons 5 nil))');
+compileAndExecute('(car (cons 8 (cons 5 nil)))');
+compileAndExecute('(let ((a (cons 8 (cons 5 nil)))) (car a))');
+compileAndExecute('(cdr (cons 8 (cons 5 nil)))');
+compileAndExecute('(car (cdr (cons 8 (cons 5 nil))))');

@@ -133,19 +133,36 @@ function compileExpression(formOrImmediate, locals, env) {
       const [carForm, cdrForm] = operands;
       const carCode = compileExpression(carForm, locals, env);
       const cdrCode = compileExpression(cdrForm, locals, env);
-      const code = block([...i32Store(getLocal(0), carCode),
-                          ...i32Store(getLocal(0), cdrCode, 4),
-                          ...markCons(alloc(locals, 8))]);
-      return code;
+
+      locals.push({ type: 'i32' });
+      const carLocal = locals.length;
+      locals.push({ type: 'i32' });
+      const cdrLocal = locals.length;
+
+      return block(concatenate(Uint8Array,
+                               setLocal(carLocal, carCode),
+                               setLocal(cdrLocal, cdrCode),
+                               i32Store(getLocal(0), getLocal(carLocal)),
+                               i32Store(getLocal(0), getLocal(cdrLocal), 4),
+                               markCons(alloc(locals, 8))));
     } else if (op.value === 'car') {
       const [valForm] = operands;
       const address = compileExpression(valForm, locals, env);
-      return ifExpression(address,
-                          i32Load(i32.sub(address, i32Const(CONS_TAG))));
+      locals.push({ type: 'i32' });
+      const idx = locals.length;
+      return block(concatenate(Uint8Array,
+                               setLocal(idx, address),
+                               ifExpression(getLocal(idx),
+                                            i32Load(i32.sub(getLocal(idx), i32Const(CONS_TAG))))));
     } else if (op.value === 'cdr') {
       const [valForm] = operands;
       const address = compileExpression(valForm, locals, env);
-      return ifExpression(address, i32Load(address, 1));
+      locals.push({ type: 'i32' });
+      const idx = locals.length;
+      return block(concatenate(Uint8Array,
+                               setLocal(idx, address),
+                               ifExpression(getLocal(idx),
+                                            i32Load(getLocal(idx), 1))));
     }
 
     throw new Error('Not yet implemented');
