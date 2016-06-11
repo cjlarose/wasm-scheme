@@ -76,34 +76,76 @@ function ifExpression(test, thenCode, elseCode = NIL) {
   return concatenate(Uint8Array, testCode, ifElse(thenCode, elseCode));
 }
 
+function compilePrimitiveCall(formOrImmediate, locals, env) {
+  const [op, ...operands] = formOrImmediate;
+
+  if (op.value === 'not') {
+    return markBoolean(i32.eqz(i32.shrU(compileExpression(operands[0], locals, env),
+                                        i32Const(2))));
+  } else if (op.value === 'fixnum?') {
+    return markBoolean(i32.eq(extractTag(compileExpression(operands[0], locals, env)),
+                              i32Const(FIXNUM_TAG)));
+  } else if (op.value === 'boolean?') {
+    return markBoolean(i32.eq(extractTag(compileExpression(operands[0], locals, env)),
+                              i32Const(BOOLEAN_TAG)));
+  } else if (op.type === TOKEN_TYPES.PLUS) {
+    const exprs = operands.map(operand => extractFixnum(compileExpression(operand, locals, env)));
+    const sum = exprs.reduce((sumExpr, operand) => i32.add(sumExpr, operand));
+    return markFixnum(sum);
+  } else if (op.type === TOKEN_TYPES.MINUS) {
+    if (operands.length === 1) {
+      return markFixnum(i32.sub(i32Const(0),
+                                extractFixnum(compileExpression(operands[0], locals, env))));
+    }
+
+    const exprs = operands.map(operand => extractFixnum(compileExpression(operand, locals, env)));
+    const sum = exprs.reduce((diffExpr, operand) => i32.sub(diffExpr, operand));
+    return markFixnum(sum);
+  } else if (op.value === 'cons') {
+    const [carForm, cdrForm] = operands;
+    const carCode = compileExpression(carForm, locals, env);
+    const cdrCode = compileExpression(cdrForm, locals, env);
+
+    locals.push({ type: 'i32' });
+    const carLocal = locals.length;
+    locals.push({ type: 'i32' });
+    const cdrLocal = locals.length;
+
+    return block(concatenate(Uint8Array,
+                             setLocal(carLocal, carCode),
+                             setLocal(cdrLocal, cdrCode),
+                             i32Store(getLocal(0), getLocal(carLocal)),
+                             i32Store(getLocal(0), getLocal(cdrLocal), 4),
+                             markCons(alloc(locals, 8))));
+  } else if (op.value === 'car') {
+    const [valForm] = operands;
+    const address = compileExpression(valForm, locals, env);
+    locals.push({ type: 'i32' });
+    const idx = locals.length;
+    return block(concatenate(Uint8Array,
+                             setLocal(idx, address),
+                             ifExpression(getLocal(idx),
+                                          i32Load(i32.sub(getLocal(idx), i32Const(CONS_TAG))))));
+  } else if (op.value === 'cdr') {
+    const [valForm] = operands;
+    const address = compileExpression(valForm, locals, env);
+    locals.push({ type: 'i32' });
+    const idx = locals.length;
+    return block(concatenate(Uint8Array,
+                             setLocal(idx, address),
+                             ifExpression(getLocal(idx),
+                                          i32Load(getLocal(idx), 1))));
+  }
+
+  throw new Error('Not yet implemented');
+}
+
 // CL form -> WASM expression(s)
 function compileExpression(formOrImmediate, locals, env) {
   if (Array.isArray(formOrImmediate)) {
     const [op, ...operands] = formOrImmediate;
 
-    if (op.value === 'not') {
-      return markBoolean(i32.eqz(i32.shrU(compileExpression(operands[0], locals, env),
-                                          i32Const(2))));
-    } else if (op.value === 'fixnum?') {
-      return markBoolean(i32.eq(extractTag(compileExpression(operands[0], locals, env)),
-                                i32Const(FIXNUM_TAG)));
-    } else if (op.value === 'boolean?') {
-      return markBoolean(i32.eq(extractTag(compileExpression(operands[0], locals, env)),
-                                i32Const(BOOLEAN_TAG)));
-    } else if (op.type === TOKEN_TYPES.PLUS) {
-      const exprs = operands.map(operand => extractFixnum(compileExpression(operand, locals, env)));
-      const sum = exprs.reduce((sumExpr, operand) => i32.add(sumExpr, operand));
-      return markFixnum(sum);
-    } else if (op.type === TOKEN_TYPES.MINUS) {
-      if (operands.length === 1) {
-        return markFixnum(i32.sub(i32Const(0),
-                                  extractFixnum(compileExpression(operands[0], locals, env))));
-      }
-
-      const exprs = operands.map(operand => extractFixnum(compileExpression(operand, locals, env)));
-      const sum = exprs.reduce((diffExpr, operand) => i32.sub(diffExpr, operand));
-      return markFixnum(sum);
-    } else if (op.value === 'let') {
+    if (op.value === 'let') {
       const [bindings, ...exprs] = operands;
 
       const newBindings = {};
@@ -129,43 +171,9 @@ function compileExpression(formOrImmediate, locals, env) {
       return ifExpression(compileExpression(testForm, locals, env),
                           compileExpression(thenForm, locals, env),
                           elseForm ? compileExpression(elseForm, locals, env) : undefined);
-    } else if (op.value === 'cons') {
-      const [carForm, cdrForm] = operands;
-      const carCode = compileExpression(carForm, locals, env);
-      const cdrCode = compileExpression(cdrForm, locals, env);
-
-      locals.push({ type: 'i32' });
-      const carLocal = locals.length;
-      locals.push({ type: 'i32' });
-      const cdrLocal = locals.length;
-
-      return block(concatenate(Uint8Array,
-                               setLocal(carLocal, carCode),
-                               setLocal(cdrLocal, cdrCode),
-                               i32Store(getLocal(0), getLocal(carLocal)),
-                               i32Store(getLocal(0), getLocal(cdrLocal), 4),
-                               markCons(alloc(locals, 8))));
-    } else if (op.value === 'car') {
-      const [valForm] = operands;
-      const address = compileExpression(valForm, locals, env);
-      locals.push({ type: 'i32' });
-      const idx = locals.length;
-      return block(concatenate(Uint8Array,
-                               setLocal(idx, address),
-                               ifExpression(getLocal(idx),
-                                            i32Load(i32.sub(getLocal(idx), i32Const(CONS_TAG))))));
-    } else if (op.value === 'cdr') {
-      const [valForm] = operands;
-      const address = compileExpression(valForm, locals, env);
-      locals.push({ type: 'i32' });
-      const idx = locals.length;
-      return block(concatenate(Uint8Array,
-                               setLocal(idx, address),
-                               ifExpression(getLocal(idx),
-                                            i32Load(getLocal(idx), 1))));
+    } else {
+      return compilePrimitiveCall(formOrImmediate, locals, env);
     }
-
-    throw new Error('Not yet implemented');
   }
 
   if (formOrImmediate.type === TOKEN_TYPES.ID) {
