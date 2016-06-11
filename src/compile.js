@@ -81,7 +81,7 @@ function compileExpression(formOrImmediate, locals, env) {
   if (Array.isArray(formOrImmediate)) {
     const [op, ...operands] = formOrImmediate;
 
-    if (op.value === 'not' && operands[0].type === TOKEN_TYPES.BOOLEAN) {
+    if (op.value === 'not') {
       return markBoolean(i32.eqz(i32.shrU(compileExpression(operands[0], locals, env),
                                           i32Const(2))));
     } else if (op.value === 'fixnum?') {

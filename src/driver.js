@@ -22,6 +22,8 @@ compileAndExecute('nil');
 console.log('Unary operations');
 compileAndExecute('(not t)');
 compileAndExecute('(not nil)');
+compileAndExecute('(not (not t))');
+compileAndExecute('(not (not (not t)))');
 
 compileAndExecute('(fixnum? 238)');
 compileAndExecute('(fixnum? nil)');
