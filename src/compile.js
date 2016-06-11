@@ -164,8 +164,7 @@ function compileExpression(formOrImmediate, locals, env) {
 
       const newEnv = Object.assign({}, env, newBindings);
       const bodyCode = exprs.map(expr => compileExpression(expr, locals, newEnv));
-      return block([...concatenate(Uint8Array, ...bindingExprs),
-                    ...concatenate(Uint8Array, ...bodyCode)]);
+      return block(concatenate(Uint8Array, ...bindingExprs, ...bodyCode));
     } else if (op.value === 'if') {
       const [testForm, thenForm, elseForm] = operands;
       return ifExpression(compileExpression(testForm, locals, env),
