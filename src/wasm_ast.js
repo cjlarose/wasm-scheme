@@ -54,6 +54,19 @@ export function memorySection(initialPages, maximumPages, exportMemory = false) 
   ]));
 }
 
+export function exportEntry(functionIndex, exportedName) {
+  return concatenate(Uint8Array,
+                     encodeUInt32(functionIndex),
+                     encodeUInt32(exportedName.length),
+                     exportedName);
+}
+
+export function exportSection(...exportEntries) {
+  return section('export', concatenate(Uint8Array,
+                                       encodeUInt32(exportEntries.length),
+                                       concatenate(Uint8Array, ...exportEntries)));
+}
+
 export function codeSection(...functionBodies) {
   return section('code', new Uint8Array([...encodeUInt32(functionBodies.length),
                                          ...concatenate(Uint8Array, ...functionBodies)]));

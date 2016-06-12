@@ -7,6 +7,8 @@ import {
   typeSection,
   functionSection,
   memorySection,
+  exportEntry,
+  exportSection,
   codeSection,
   functionBody,
   block,
@@ -202,6 +204,8 @@ function compileFunction(tokens) {
   return fb;
 }
 
+const utf8Encoder = new TextEncoder('utf-8');
+
 export default function compile(source) {
   const tokens = tokenize(source);
   const code = codeSection(compileFunction(tokens));
@@ -211,14 +215,7 @@ export default function compile(source) {
     ...typeSection(typeEntry([{ type: 'i32' }], 1, 'i32')),
     ...functionSection([0]),
     ...memorySection(2, 2),
-
-    /* section title length (6), section title "export", */
-    0x06, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74,
-    /* payload length (8) */
-    0x88, 0x80, 0x80, 0x80, 0x00,
-    /* count (1), export entry: index 0, function string length (5), "entry" */
-    0x01, 0x00, 0x05, 0x65, 0x6e, 0x74, 0x72, 0x79,
-
+    ...exportSection(exportEntry(0, utf8Encoder.encode('entry'))),
     ...code,
 
     /* section title length (4), section title "name" */
