@@ -25,6 +25,13 @@ function section(title, payload) {
                          ...payload]);
 }
 
+export function functionSection(typeSignatureIndices) {
+  return section('function', new Uint8Array([
+    ...encodeUInt32(typeSignatureIndices.length),
+    ...concatenate(Uint8Array, ...typeSignatureIndices.map(idx => encodeUInt32(idx))),
+  ]));
+}
+
 export function typeEntry(params, returnCount, returnType) {
   const paramTypes = params.map(p => typeRepr[p.type]);
   return new Uint8Array([0x40,

@@ -3,6 +3,7 @@ import { tokenize, parse } from './parse';
 import { TOKEN_TYPES, reservedWords } from './tokens';
 import {
   preamble,
+  functionSection,
   typeEntry,
   typeSection,
   codeSection,
@@ -206,15 +207,8 @@ export default function compile(source) {
 
   return new Uint8Array([
     ...preamble(11),
-
     ...typeSection(typeEntry([{ type: 'i32' }], 1, 'i32')),
-
-    /* section title length (8), section title "function" */
-    0x08, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e,
-    /* payload length (2), */
-    0x82, 0x80, 0x80, 0x80, 0x00,
-    /* function count 1, type signature index 0 */
-    0x01, 0x00,
+    ...functionSection([0]),
 
     /* section title length (6), section title "memory" */
     0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79,
