@@ -34,14 +34,14 @@ export function tokenize(program) {
     if (ch === '0') {
       pos++;
       if (program[pos] !== 'x') {
-        throw new Error(`Unepxected character '${program[pos]}' following '0'. ` +
+        throw new Error(`Unexpected character '${program[pos]}' following '0'. ` +
                          "Expected 'x' as part of hexadecimal literal");
       }
       pos++;
 
       ch = program[pos];
       if (!isHexDigit(ch)) {
-        throw new Error(`Unepxected character '${program[pos]}' following '0x'. ` +
+        throw new Error(`Unexpected character '${program[pos]}' following '0x'. ` +
                         'Expected hexadecimal digit (0-9, a-f, A-F)');
       }
 
