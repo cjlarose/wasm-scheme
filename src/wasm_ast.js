@@ -72,6 +72,27 @@ export function codeSection(...functionBodies) {
                                          ...concatenate(Uint8Array, ...functionBodies)]));
 }
 
+export function nameEntry(functionName, localNames) {
+  const encodedFnName = utf8Encoder.encode(functionName);
+  const encodedLocalNames = localNames.map(l => {
+    const name = utf8Encoder.encode(l);
+    return concatenate(Uint8Array,
+                       encodeUInt32(name.length),
+                       name);
+  });
+  return concatenate(Uint8Array,
+                     encodeUInt32(encodedFnName.length),
+                     encodedFnName,
+                     encodeUInt32(localNames.length),
+                     concatenate(Uint8Array, ...encodedLocalNames));
+}
+
+export function nameSection(...nameEntries) {
+  return section('name', concatenate(Uint8Array,
+                                     encodeUInt32(nameEntries.length),
+                                     concatenate(Uint8Array, ...nameEntries)));
+}
+
 function localEntry(count, type) {
   return new Uint8Array([...encodeUInt32(count),
                          typeRepr[type]]);

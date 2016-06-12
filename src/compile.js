@@ -10,6 +10,8 @@ import {
   exportEntry,
   exportSection,
   codeSection,
+  nameEntry,
+  nameSection,
   functionBody,
   block,
   ifElse,
@@ -217,12 +219,6 @@ export default function compile(source) {
     ...memorySection(2, 2),
     ...exportSection(exportEntry(0, utf8Encoder.encode('entry'))),
     ...code,
-
-    /* section title length (4), section title "name" */
-    0x04, 0x6e, 0x61, 0x6d, 0x65,
-    /* payload length (8) */
-    0x88, 0x80, 0x80, 0x80, 0x00,
-    /* entry count (1), function name length (5) "entry", local count (0) */
-    0x01, 0x05, 0x65, 0x6e, 0x74, 0x72, 0x79, 0x00,
+    ...nameSection(nameEntry('entry', ['allocationPointer'])),
   ]);
 }
