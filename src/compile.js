@@ -212,13 +212,15 @@ export default function compile(source) {
   const tokens = tokenize(source);
   const code = codeSection(compileFunction(tokens));
 
-  return new Uint8Array([
-    ...preamble(11),
-    ...typeSection(typeEntry(['i32'], 1, 'i32')),
-    ...functionSection([0]),
-    ...memorySection(2, 2),
-    ...exportSection(exportEntry(0, utf8Encoder.encode('entry'))),
-    ...code,
-    ...nameSection(nameEntry('entry', ['allocationPointer'])),
-  ]);
+  const sections = [
+    preamble(11),
+    typeSection(typeEntry(['i32'], 1, 'i32')),
+    functionSection([0]),
+    memorySection(2, 2),
+    exportSection(exportEntry(0, utf8Encoder.encode('entry'))),
+    code,
+    nameSection(nameEntry('entry', ['allocationPointer'])),
+  ];
+
+  return concatenate(Uint8Array, ...sections);
 }
