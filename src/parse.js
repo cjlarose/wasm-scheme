@@ -109,21 +109,17 @@ function parseWithOffset(tokens, start) {
   }
 
   const ast = [];
-  let pos = start;
-  pos++;
+  let pos = start + 1;
 
   while (pos < tokens.length) {
     const token = tokens[pos];
     if (token.type === TOKEN_TYPES.CLOSE_PAREN) {
       return [ast, pos + 1];
-    } else if (token.type === TOKEN_TYPES.OPEN_PAREN) {
-      const [newTokens, newPos] = parseWithOffset(tokens, pos);
-      ast.push(newTokens);
-      pos = newPos;
-    } else {
-      ast.push(token);
-      pos++;
     }
+
+    const [newTokens, newPos] = parseWithOffset(tokens, pos);
+    ast.push(newTokens);
+    pos = newPos;
   }
 
   throw new Error('Unexpected end of input');
