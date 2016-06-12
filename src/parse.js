@@ -104,11 +104,12 @@ export function tokenize(program) {
 }
 
 function parseWithOffset(tokens, start) {
+  if (tokens[start].type !== TOKEN_TYPES.OPEN_PAREN) {
+    return [tokens[start], start + 1];
+  }
+
   const ast = [];
   let pos = start;
-  if (tokens[pos].type !== TOKEN_TYPES.OPEN_PAREN) {
-    throw new Error(`Unexpected token type '${tokens[pos].type}'`);
-  }
   pos++;
 
   while (pos < tokens.length) {

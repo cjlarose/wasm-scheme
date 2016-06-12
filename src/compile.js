@@ -193,14 +193,8 @@ function compileExpression(formOrImmediate, locals, env) {
   return i32Const(immediateRepr(formOrImmediate));
 }
 
-function compileFunction(tokens) {
-  if (isImmediateValue(tokens)) {
-    const expr = i32Const(immediateRepr(tokens[0]));
-    return functionBody([], returnNode(1, expr));
-  }
-
+function compileFunction(form) {
   const locals = [];
-  const form = parse(tokens);
   const expr = compileExpression(form, locals, {});
   const fb = functionBody(locals, returnNode(1, expr));
   return fb;
@@ -209,8 +203,8 @@ function compileFunction(tokens) {
 const utf8Encoder = new TextEncoder('utf-8');
 
 export default function compile(source) {
-  const tokens = tokenize(source);
-  const code = codeSection(compileFunction(tokens));
+  const ast = parse(tokenize(source));
+  const functions = [compileFunction(ast)];
 
   const sections = [
     preamble(11),
@@ -218,7 +212,7 @@ export default function compile(source) {
     functionSection([0]),
     memorySection(2, 2),
     exportSection(exportEntry(0, utf8Encoder.encode('entry'))),
-    code,
+    codeSection(...functions),
     nameSection(nameEntry('entry', [])),
   ];
 
