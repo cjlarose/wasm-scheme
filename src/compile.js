@@ -177,9 +177,9 @@ function compileExpression(formOrImmediate, locals, env) {
       return ifExpression(compileExpression(testForm, locals, env),
                           compileExpression(thenForm, locals, env),
                           elseForm ? compileExpression(elseForm, locals, env) : undefined);
-    } else {
-      return compilePrimitiveCall(formOrImmediate, locals, env);
     }
+
+    return compilePrimitiveCall(formOrImmediate, locals, env);
   }
 
   if (formOrImmediate.type === TOKEN_TYPES.ID) {
