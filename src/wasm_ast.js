@@ -26,7 +26,7 @@ function section(title, payload) {
 }
 
 export function typeEntry(params, returnCount, returnType) {
-  const paramTypes = params.map(p => typeRepr[p.type]);
+  const paramTypes = params.map(p => typeRepr[p]);
   return new Uint8Array([0x40,
                          ...encodeUInt32(params.length),
                          ...paramTypes,

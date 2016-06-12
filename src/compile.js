@@ -212,7 +212,7 @@ export default function compile(source) {
 
   return new Uint8Array([
     ...preamble(11),
-    ...typeSection(typeEntry([{ type: 'i32' }], 1, 'i32')),
+    ...typeSection(typeEntry(['i32'], 1, 'i32')),
     ...functionSection([0]),
     ...memorySection(2, 2),
     ...exportSection(exportEntry(0, utf8Encoder.encode('entry'))),
