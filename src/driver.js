@@ -1,5 +1,25 @@
 import compile from './compile';
 
+// http://stackoverflow.com/a/18197341/1231384
+function download(filename, url) {
+  const element = document.createElement('a');
+  element.setAttribute('href', url);
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
+
+function downloadCode(source) {
+  const view = compile(source);
+  const url = URL.createObjectURL(new Blob([view], { type: 'application/octet-stream' }));
+  download('wasmtest.wasm', url);
+}
+
 function compileAndExecute(source) {
   console.log(source);
   const view = compile(source);
