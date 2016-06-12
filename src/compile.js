@@ -219,7 +219,7 @@ export default function compile(source) {
     memorySection(2, 2),
     exportSection(exportEntry(0, utf8Encoder.encode('entry'))),
     code,
-    nameSection(nameEntry('entry', ['allocationPointer'])),
+    nameSection(nameEntry('entry', [])),
   ];
 
   return concatenate(Uint8Array, ...sections);
