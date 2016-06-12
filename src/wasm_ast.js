@@ -9,6 +9,14 @@ const typeRepr = {
   f64: 0x04,
 };
 
+export function preamble(version) {
+  const buffer = new ArrayBuffer(8);
+  const view = new DataView(buffer);
+  view.setInt32(0, 0x0061736d);
+  view.setInt32(4, version, true);
+  return new Uint8Array(buffer);
+}
+
 function section(title, payload) {
   const titleBytes = utf8Encoder.encode(title);
   return new Uint8Array([...encodeUInt32(titleBytes.length),
