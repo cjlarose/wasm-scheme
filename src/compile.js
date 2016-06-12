@@ -3,9 +3,10 @@ import { tokenize, parse } from './parse';
 import { TOKEN_TYPES, reservedWords } from './tokens';
 import {
   preamble,
-  functionSection,
   typeEntry,
   typeSection,
+  functionSection,
+  memorySection,
   codeSection,
   functionBody,
   block,
@@ -209,13 +210,7 @@ export default function compile(source) {
     ...preamble(11),
     ...typeSection(typeEntry([{ type: 'i32' }], 1, 'i32')),
     ...functionSection([0]),
-
-    /* section title length (6), section title "memory" */
-    0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79,
-    /* payload length (5) */
-    0x85, 0x80, 0x80, 0x80, 0x00,
-    /* initial memory (2 x 64Kib pages), maximum memory (2 x 64Kib pages), not exported */
-    0x80, 0x02, 0x80, 0x02, 0x00,
+    ...memorySection(2, 2),
 
     /* section title length (6), section title "export", */
     0x06, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74,
