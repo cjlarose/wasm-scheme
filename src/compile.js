@@ -205,7 +205,6 @@ export default function compile(source) {
   const code = codeSection(compileFunction(tokens));
 
   return new Uint8Array([
-    /* Magic number, version (11) */
     ...preamble(11),
 
     ...typeSection(typeEntry([{ type: 'i32' }], 1, 'i32')),
