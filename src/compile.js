@@ -222,27 +222,86 @@ function compileExpression(formOrImmediate, locals, env) {
   return [i32Const(immediateRepr(formOrImmediate)), locals];
 }
 
-function compileFunction(form) {
+// compileLambda -> exprAst -> (WASM code for (closure), WASM code for a bunch of function defintions)
+// compileLambda((lambda () (+ x y))) => (closure f0 x y), { f0: (i32.add $x $y) }
+// compileLambda((lambda (y) (lambda () (+ x y)))) => (closure f1 x y), { f0: (i32.add $x $y), f1: <pointer to closure f0> }
+// compileExpression((+ a b)) => (i32.add (get_local $a) (get_local $b)), {}
+// compileExpression((+ a (lambda () (let ((b 2)) b)))) => (i32.add (get_local $a) (closure f0)), { f0: (get_local $b) }
+// compileSource -> exprAst -> WASM code for the entire module
+
+function compileFunctions(form) {
   const [code, locals] = compileExpression(form, [], {});
-  const fb = functionBody(locals, returnNode(1, code));
-  return fb;
+  const functions = [];
+  const entryFunction = {
+    name: 'entry',
+    returnCount: 1,
+    returnType: 'i32',
+    bodyAst: code,
+    locals,
+    params: [{ type: 'i32' }],
+  };
+  functions.push(entryFunction);
+  return {
+    version: 11,
+    memory: { initial: 2, maximum: 2 },
+    functions,
+  };
+  // produce topLevelFunctions, expression
+  /*
+  (let ((x 5))
+    (lambda (y) (lambda () (+ x y)))) // while compiling, anytime a lambda is
+                                      // encountered, a new fn is added to the
+                                      // fn list in it's place, a call to
+                                      // (closure x) is added when compiling a
+                                      // lambda, keep track of defined
+                                      // variables and referenced variables.
+                                      // Free variables are those that are
+                                      // referenced, in scope, but never
+                                      // defined (as in a let binding)
+
+  (labels ((f0 (code () (x y) (+ x y))) // WASM function with empty environment
+           (f1 (code (y) (x) (closure f0 x y)))) // WASM function with env
+                                                 // { f0: indirectFnIdx/signatureIndex }
+    (let ((x 5)) (closure f1 x))) // yet another WASM function "entry" with env
+                                  // { f0: 0, f1: 1 }
+                                  // Treat like (code () () (let ((...)) (...)))
+
+  [ { name: "\0",
+      returnCount: 1,
+      returnType: 'i32',
+      codeAst: ["cons", "1",  ["cons", "2", "nil"]] },
+    { name: "\1",
+      returnCount: 1,
+      returnType: 'i32' },
+    { name: "entry",
+      returnCount: 1,
+      returnType: 'i32' } ]
+  */
 }
 
 const utf8Encoder = new TextEncoder('utf-8');
 
-export default function compile(source) {
-  const ast = parse(tokenize(source));
-  const functions = [compileFunction(ast)];
+function compileModule({ version, memory, functions }) {
+  const functionEntries = functions.map(({ locals, bodyAst }) => functionBody(locals, bodyAst));
+  const nameEntries = functions.map(({ name }) => nameEntry(name, []));
+  const typeEntries = functions.map(({ params, returnCount, returnType }) =>
+    typeEntry(params.map(p => p.type), returnCount, returnType));
 
   const sections = [
-    preamble(11),
-    typeSection(typeEntry(['i32'], 1, 'i32')),
-    functionSection([0]),
-    memorySection(2, 2),
+    preamble(version),
+    typeSection(...typeEntries),
+    functionSection([...Array(functions.length).keys()]),
+    memorySection(memory.initial, memory.maximum),
     exportSection(exportEntry(0, utf8Encoder.encode('entry'))),
-    codeSection(...functions),
-    nameSection(nameEntry('entry', [])),
+    codeSection(...functionEntries),
+    nameSection(...nameEntries),
   ];
 
   return concatenate(Uint8Array, ...sections);
+}
+
+export default function compile(source) {
+  const ast = parse(tokenize(source));
+  const moduleDescription = compileFunctions(ast);
+  return compileModule(moduleDescription);
 }
