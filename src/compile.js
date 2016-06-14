@@ -83,46 +83,50 @@ function ifExpression(test, thenCode, elseCode = NIL) {
   return concatenate(Uint8Array, testCode, ifElse(thenCode, elseCode));
 }
 
-function compilePrimitiveCall(formOrImmediate, locals, env) {
+function compilePrimitiveCall(formOrImmediate, locals, env, functions) {
   const [op, ...operands] = formOrImmediate;
 
   if (op.value === 'not') {
-    const [operandCode, newLocals] = compileExpression(operands[0], locals, env);
-    return [markBoolean(i32.eqz(i32.shrU(operandCode, i32Const(2)))), newLocals];
+    const [operandCode, newLocals] = compileExpression(operands[0], locals, env, functions);
+    return [markBoolean(i32.eqz(i32.shrU(operandCode, i32Const(2)))), newLocals, functions];
   } else if (op.value === 'fixnum?') {
-    const [operandCode, newLocals] = compileExpression(operands[0], locals, env);
-    return [markBoolean(i32.eq(extractTag(operandCode), i32Const(FIXNUM_TAG))), newLocals];
+    const [operandCode, newLocals] = compileExpression(operands[0], locals, env, functions);
+    const code = markBoolean(i32.eq(extractTag(operandCode), i32Const(FIXNUM_TAG)));
+    return [code, newLocals, functions];
   } else if (op.value === 'boolean?') {
-    const [operandCode, newLocals] = compileExpression(operands[0], locals, env);
-    return [markBoolean(i32.eq(extractTag(operandCode), i32Const(BOOLEAN_TAG))), newLocals];
+    const [operandCode, newLocals] = compileExpression(operands[0], locals, env, functions);
+    const code = markBoolean(i32.eq(extractTag(operandCode), i32Const(BOOLEAN_TAG)));
+    return [code, newLocals, functions];
   } else if (op.type === TOKEN_TYPES.PLUS) {
     const [ast, newLocals] = operands.reduce(([expr, currentLocals], operand) => {
-      const [operandCode, modifiedLocals] = compileExpression(operand, currentLocals, env);
+      const [operandCode, modifiedLocals] =
+        compileExpression(operand, currentLocals, env, functions);
       const newExpr = i32.add(expr, extractFixnum(operandCode));
       return [newExpr, modifiedLocals];
     }, [i32Const(0), locals]);
-    return [markFixnum(ast), newLocals];
+    return [markFixnum(ast), newLocals, functions];
   } else if (op.type === TOKEN_TYPES.MINUS) {
     if (operands.length === 1) {
-      const [operandCode, newLocals] = compileExpression(operands[0], locals, env);
+      const [operandCode, newLocals] = compileExpression(operands[0], locals, env, functions);
       const code = markFixnum(i32.sub(i32Const(0), extractFixnum(operandCode)));
-      return [code, newLocals];
+      return [code, newLocals, functions];
     }
 
     const [minuendAst, ...subtrahends] = operands;
-    const [minuendCode, startingLocals] = compileExpression(minuendAst, locals, env);
+    const [minuendCode, startingLocals] = compileExpression(minuendAst, locals, env, functions);
     const minuend = extractFixnum(minuendCode);
 
     const [ast, newLocals] = subtrahends.reduce(([expr, currentLocals], operand) => {
-      const [operandCode, modifiedLocals] = compileExpression(operand, currentLocals, env);
+      const [operandCode, modifiedLocals] =
+        compileExpression(operand, currentLocals, env, functions);
       const newExpr = i32.sub(expr, extractFixnum(operandCode));
       return [newExpr, modifiedLocals];
     }, [minuend, startingLocals]);
-    return [markFixnum(ast), newLocals];
+    return [markFixnum(ast), newLocals, functions];
   } else if (op.value === 'cons') {
     const [carForm, cdrForm] = operands;
-    const [carCode, localsAfterCar] = compileExpression(carForm, locals, env);
-    const [cdrCode, localsAfterCdr] = compileExpression(cdrForm, localsAfterCar, env);
+    const [carCode, localsAfterCar] = compileExpression(carForm, locals, env, functions);
+    const [cdrCode, localsAfterCdr] = compileExpression(cdrForm, localsAfterCar, env, functions);
 
     const newLocals = localsAfterCdr.concat([{ type: 'i32' }, { type: 'i32' }]);
     const carLocal = newLocals.length - 1;
@@ -134,10 +138,10 @@ function compilePrimitiveCall(formOrImmediate, locals, env) {
                                    i32Store(getLocal(0), getLocal(carLocal)),
                                    i32Store(getLocal(0), getLocal(cdrLocal), 4),
                                    markCons(alloc(newLocals, 8))));
-    return [code, newLocals];
+    return [code, newLocals, functions];
   } else if (op.value === 'car') {
     const [valForm] = operands;
-    const [addressCode, localsAfterAddress] = compileExpression(valForm, locals, env);
+    const [addressCode, localsAfterAddress] = compileExpression(valForm, locals, env, functions);
     const newLocals = localsAfterAddress.concat([{ type: 'i32' }]);
     const idx = newLocals.length;
     const code = block(concatenate(Uint8Array,
@@ -145,24 +149,24 @@ function compilePrimitiveCall(formOrImmediate, locals, env) {
                                    ifExpression(getLocal(idx),
                                                 i32Load(i32.sub(getLocal(idx),
                                                                 i32Const(CONS_TAG))))));
-    return [code, newLocals];
+    return [code, newLocals, functions];
   } else if (op.value === 'cdr') {
     const [valForm] = operands;
-    const [addressCode, localsAfterAddress] = compileExpression(valForm, locals, env);
+    const [addressCode, localsAfterAddress] = compileExpression(valForm, locals, env, functions);
     const newLocals = localsAfterAddress.concat([{ type: 'i32' }]);
     const idx = newLocals.length;
     const code = block(concatenate(Uint8Array,
                                    setLocal(idx, addressCode),
                                    ifExpression(getLocal(idx),
                                                 i32Load(getLocal(idx), 1))));
-    return [code, newLocals];
+    return [code, newLocals, functions];
   }
 
   throw new Error('Not yet implemented');
 }
 
 // CL form -> WASM expression(s)
-function compileExpression(formOrImmediate, locals, env) {
+function compileExpression(formOrImmediate, locals, env, functions) {
   if (Array.isArray(formOrImmediate)) {
     const [op, ...operands] = formOrImmediate;
 
@@ -182,7 +186,7 @@ function compileExpression(formOrImmediate, locals, env) {
 
       const bindingCode = [];
       const localsAfterBindings = bindings.reduce((currentLocals, [name, expr]) => {
-        const [code, modifiedLocals] = compileExpression(expr, currentLocals, env);
+        const [code, modifiedLocals] = compileExpression(expr, currentLocals, env, functions);
         bindingCode.push(setLocal(newBindings[name.value], code));
         return modifiedLocals;
       }, locals.concat(bindingLocals));
@@ -190,25 +194,26 @@ function compileExpression(formOrImmediate, locals, env) {
       const newEnv = Object.assign({}, env, newBindings);
       const bodyCode = [];
       const newLocals = exprs.reduce((currentLocals, expr) => {
-        const [code, modifiedLocals] = compileExpression(expr, currentLocals, newEnv);
+        const [code, modifiedLocals] = compileExpression(expr, currentLocals, newEnv, functions);
         bodyCode.push(code);
         return modifiedLocals;
       }, localsAfterBindings);
 
-      return [block(concatenate(Uint8Array, ...bindingCode, ...bodyCode)), newLocals];
+      return [block(concatenate(Uint8Array, ...bindingCode, ...bodyCode)), newLocals, functions];
     } else if (op.value === 'if') {
       const [testForm, thenForm, elseForm] = operands;
 
-      const [testCode, localsWithTest] = compileExpression(testForm, locals, env);
-      const [thenCode, localsWithThen] = compileExpression(thenForm, localsWithTest, env);
+      const [testCode, localsWithTest] = compileExpression(testForm, locals, env, functions);
+      const [thenCode, localsWithThen] =
+        compileExpression(thenForm, localsWithTest, env, functions);
       const [elseCode, localsWithElse] = elseForm ?
-        compileExpression(elseForm, locals, env) : [undefined, localsWithThen];
+        compileExpression(elseForm, locals, env, functions) : [undefined, localsWithThen];
 
       const code = ifExpression(testCode, thenCode, elseCode);
-      return [code, localsWithElse];
+      return [code, localsWithElse, functions];
     }
 
-    return compilePrimitiveCall(formOrImmediate, locals, env);
+    return compilePrimitiveCall(formOrImmediate, locals, env, functions);
   }
 
   if (formOrImmediate.type === TOKEN_TYPES.ID) {
@@ -216,10 +221,10 @@ function compileExpression(formOrImmediate, locals, env) {
     if (!env.hasOwnProperty(name)) {
       throw new Error(`Undefined variable '${name}'`);
     }
-    return [getLocal(env[name]), locals];
+    return [getLocal(env[name]), locals, functions];
   }
 
-  return [i32Const(immediateRepr(formOrImmediate)), locals];
+  return [i32Const(immediateRepr(formOrImmediate)), locals, functions];
 }
 
 // compileLambda -> exprAst -> (WASM code for (closure), WASM code for a bunch of function defintions)
@@ -230,8 +235,7 @@ function compileExpression(formOrImmediate, locals, env) {
 // compileSource -> exprAst -> WASM code for the entire module
 
 function compileFunctions(form) {
-  const [code, locals] = compileExpression(form, [], {});
-  const functions = [];
+  const [code, locals, functions] = compileExpression(form, [], {}, []);
   const entryFunction = {
     name: 'entry',
     returnCount: 1,
