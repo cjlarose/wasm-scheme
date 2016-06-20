@@ -185,21 +185,25 @@ function compileExpression(formOrImmediate, locals, env, functions) {
       }
 
       const bindingCode = [];
-      const localsAfterBindings = bindings.reduce((currentLocals, [name, expr]) => {
-        const [code, modifiedLocals] = compileExpression(expr, currentLocals, env, functions);
-        bindingCode.push(setLocal(newBindings[name.value], code));
-        return modifiedLocals;
-      }, locals.concat(bindingLocals));
+      const [localsAfterBindings, fnsAfterBindings] = bindings.reduce(
+        ([currentLocals, currentFunctions], [name, expr]) => {
+          const [code, modifiedLocals, modifiedFunctions] =
+            compileExpression(expr, currentLocals, env, currentFunctions);
+          bindingCode.push(setLocal(newBindings[name.value], code));
+          return [modifiedLocals, modifiedFunctions];
+        }, [locals.concat(bindingLocals), functions]);
 
       const newEnv = Object.assign({}, env, newBindings);
       const bodyCode = [];
-      const newLocals = exprs.reduce((currentLocals, expr) => {
-        const [code, modifiedLocals] = compileExpression(expr, currentLocals, newEnv, functions);
+      const [newLocals, newFunctions] = exprs.reduce(([currentLocals, currentFunctions], expr) => {
+        const [code, modifiedLocals, modifiedFunctions] =
+          compileExpression(expr, currentLocals, newEnv, currentFunctions);
         bodyCode.push(code);
-        return modifiedLocals;
-      }, localsAfterBindings);
+        return [modifiedLocals, modifiedFunctions];
+      }, [localsAfterBindings, fnsAfterBindings]);
 
-      return [block(concatenate(Uint8Array, ...bindingCode, ...bodyCode)), newLocals, functions];
+      const allCode = block(concatenate(Uint8Array, ...bindingCode, ...bodyCode));
+      return [allCode, newLocals, newFunctions];
     } else if (op.value === 'if') {
       const [testForm, thenForm, elseForm] = operands;
 
@@ -211,6 +215,21 @@ function compileExpression(formOrImmediate, locals, env, functions) {
 
       const code = ifExpression(testCode, thenCode, elseCode);
       return [code, localsWithElse, functions];
+    } else if (op.value === 'lambda') {
+      const [params, functionBody] = operands;
+      const [functionCode, functionLocals, newFunctions] =
+        compileExpression(functionBody, [], {}, functions);
+      const lambdaDescription = {
+        name: `\\${newFunctions.length}`,
+        returnCount: 1,
+        returnType: 'i32',
+        bodyAst: functionCode,
+        locals: functionLocals,
+        params: [],
+      };
+
+      const closureCode = NIL;
+      return [closureCode, locals, newFunctions.concat([lambdaDescription])];
     }
 
     return compilePrimitiveCall(formOrImmediate, locals, env, functions);
@@ -234,6 +253,8 @@ function compileExpression(formOrImmediate, locals, env, functions) {
 // compileExpression((+ a (lambda () (let ((b 2)) b)))) => (i32.add (get_local $a) (closure f0)), { f0: (get_local $b) }
 // compileSource -> exprAst -> WASM code for the entire module
 
+const utf8Encoder = new TextEncoder('utf-8');
+
 function compileFunctions(form) {
   const [code, locals, functions] = compileExpression(form, [], {}, []);
   const entryFunction = {
@@ -243,6 +264,7 @@ function compileFunctions(form) {
     bodyAst: code,
     locals,
     params: [{ type: 'i32' }],
+    exportAs: utf8Encoder.encode('entry'),
   };
   functions.push(entryFunction);
   return {
@@ -283,20 +305,21 @@ function compileFunctions(form) {
   */
 }
 
-const utf8Encoder = new TextEncoder('utf-8');
-
 function compileModule({ version, memory, functions }) {
   const functionEntries = functions.map(({ locals, bodyAst }) => functionBody(locals, bodyAst));
-  const nameEntries = functions.map(({ name }) => nameEntry(name, []));
   const typeEntries = functions.map(({ params, returnCount, returnType }) =>
     typeEntry(params.map(p => p.type), returnCount, returnType));
+  const exportEntries = functions
+    .map(({ exportAs }, idx) => exportAs && exportEntry(idx, exportAs))
+    .filter(entry => entry);
+  const nameEntries = functions.map(({ name }) => nameEntry(name, []));
 
   const sections = [
     preamble(version),
     typeSection(...typeEntries),
     functionSection([...Array(functions.length).keys()]),
     memorySection(memory.initial, memory.maximum),
-    exportSection(exportEntry(0, utf8Encoder.encode('entry'))),
+    exportSection(...exportEntries),
     codeSection(...functionEntries),
     nameSection(...nameEntries),
   ];
