@@ -46,6 +46,13 @@ export function functionSection(typeSignatureIndices) {
   ]));
 }
 
+export function tableSection(functionIndices) {
+  return section('table', new Uint8Array([
+    ...encodeUInt32(functionIndices.length),
+    ...concatenate(Uint8Array, ...functionIndices.map(idx => encodeUInt32(idx))),
+  ]));
+}
+
 export function memorySection(initialPages, maximumPages, exportMemory = false) {
   return section('memory', new Uint8Array([
     ...encodeUInt32(initialPages),
@@ -123,6 +130,10 @@ export function returnNode(numVals, valAst) {
   return new Uint8Array([...valAst, 0x09, ...encodeUInt32(numVals)]);
 }
 
+export function unreachable() {
+  return new Uint8Array([0x0a]);
+}
+
 export function i32Const(num) {
   return new Uint8Array([0x10, ...encodeInt32(num)]);
 }
@@ -133,4 +144,11 @@ export function getLocal(idx) {
 
 export function setLocal(idx, valAst) {
   return new Uint8Array([...valAst, 0x15, ...encodeUInt32(idx)]);
+}
+
+export function callIndirect(functionIndexAst, argumentCount, typeIndex) {
+  return new Uint8Array([...functionIndexAst,
+                         0x17,
+                         ...encodeUInt32(argumentCount),
+                         ...encodeUInt32(typeIndex)]);
 }
