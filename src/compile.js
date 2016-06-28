@@ -6,6 +6,7 @@ import {
   typeEntry,
   typeSection,
   functionSection,
+  tableSection,
   memorySection,
   exportEntry,
   exportSection,
@@ -15,10 +16,11 @@ import {
   functionBody,
   block,
   ifElse,
-  returnNode,
+  unreachable,
   i32Const,
   getLocal,
   setLocal,
+  callIndirect,
 } from './wasm_ast';
 
 import { i32 } from './wasm_ast/simple_ops';
@@ -27,6 +29,7 @@ import { i32Load, i32Store } from './wasm_ast/memory_access';
 const FIXNUM_TAG = 1;
 const BOOLEAN_TAG = 2;
 const CONS_TAG = 3;
+const CLOSURE_TAG = 4;
 
 function isImmediateValue(tokens) {
   if (tokens.length !== 1) return false;
@@ -71,6 +74,7 @@ function extractFixnum(exprAst) {
 function alloc(locals, numBytes) {
   // produce code that increments the allocation pointer by numBytes and
   // returns the old allocation pointer
+  // TODO: Let alloc accept a localIdx parameter instead of generating one
   locals.push({ name: 'allocationPointer', type: 'i32' });
   const idx = locals.length;
   return block([...setLocal(idx, getLocal(0)),
@@ -80,7 +84,17 @@ function alloc(locals, numBytes) {
 
 function ifExpression(test, thenCode, elseCode = NIL) {
   const testCode = i32.ne(test, NIL);
+  // TODO: Make ifElse take testCode as an argument
   return concatenate(Uint8Array, testCode, ifElse(thenCode, elseCode));
+}
+
+function runtimeAssert(testCode) {
+  return concatenate(Uint8Array, testCode, ifElse(NIL, unreachable()));
+}
+
+function assertRawPointer(valAst) {
+  const testCode = i32.eqz(extractTag(valAst));
+  return runtimeAssert(testCode);
 }
 
 function compilePrimitiveCall(formOrImmediate, locals, env, functions) {
@@ -219,6 +233,8 @@ function compileExpression(formOrImmediate, locals, env, functions) {
       const [params, functionBody] = operands;
       const [functionCode, functionLocals, newFunctions] =
         compileExpression(functionBody, [], {}, functions);
+
+      const functionIndex = newFunctions.length;
       const lambdaDescription = {
         name: `\\${newFunctions.length}`,
         returnCount: 1,
@@ -228,8 +244,23 @@ function compileExpression(formOrImmediate, locals, env, functions) {
         params: [],
       };
 
-      const closureCode = NIL;
+      const closureCode = concatenate(Uint8Array,
+                                      i32Store(getLocal(0), i32Const(CLOSURE_TAG)),
+                                      i32Store(getLocal(0), i32Const(functionIndex), 4),
+                                      alloc(locals, 8));
+
       return [closureCode, locals, newFunctions.concat([lambdaDescription])];
+    } else if (env.hasOwnProperty(op.value)) {
+      const localIdx = env[op.value];
+      const assertClosure = runtimeAssert(i32.eq(i32Const(CLOSURE_TAG),
+                                                 i32Load(getLocal(localIdx))));
+      const callIndex = i32Load(getLocal(localIdx), 4);
+      const code = concatenate(Uint8Array,
+                               assertRawPointer(getLocal(localIdx)),
+                               assertClosure,
+                               callIndirect(callIndex, 0, 0));
+
+      return [code, locals, functions];
     }
 
     return compilePrimitiveCall(formOrImmediate, locals, env, functions);
@@ -318,6 +349,7 @@ function compileModule({ version, memory, functions }) {
     preamble(version),
     typeSection(...typeEntries),
     functionSection([...Array(functions.length).keys()]),
+    tableSection([...Array(functions.length).keys()]),
     memorySection(memory.initial, memory.maximum),
     exportSection(...exportEntries),
     codeSection(...functionEntries),

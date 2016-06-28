@@ -178,3 +178,23 @@ describe('The cdr function', () => {
     expect(compileAndExecute('(cdr (cons nil (cons 5 2)))')).toBe(taggedCons(0));
   });
 });
+
+describe('Lambdas', () => {
+  it('without parameters are evaluated when called', () => {
+    const source = '(let ((f (lambda () (+ 7 3)))) (f))';
+    expect(compileAndExecute(source)).toBe(taggedFixnum(10));
+  });
+
+  /*
+  it('with parameters have access to arguments', () => {
+    const source = '(let ((f (lambda (x) (+ 2 x)))) (f 3))';
+    expect(compileAndExecute(source)).toBe(taggedBoolean(taggedFixnum(5)));
+  });
+
+  it('can include lambda defintions', () => {
+  });
+
+  it('close over variables available in the scope in which they were defined', () => {
+  });
+  */
+});
